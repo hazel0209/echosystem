@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>텍스트 어드벤처 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .game-container {
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+        }
+        .story-text {
+            margin-bottom: 20px;
+            cursor: pointer;
+            min-height: 100px; /* 타이핑 효과 시 화면 깜빡임 방지 */
+            text-align: left;
+            white-space: pre-wrap;
+        }
+        .choice-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .choice-button {
+            background-color: #333;
+            color: white;
+            border: 1px solid #444;
+            padding: 10px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .choice-button:hover {
+            background-color: #555;
+        }
+        .choice-button.disabled {
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="story-text" class="story-text"></div>
+        <div id="choices" class="choice-buttons"></div>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        let playerHealth = 100;
+        let currentStage = 0;
+        let playerItems = []; // 플레이어가 소유한 아이템
+
+        let typingSpeed = 50; // 타이핑 속도 (밀리초 단위)
+        let typingInterval;
+        let isTyping = false;
+
+        // 게임 지문과 선택지 정의
+        const storyData = [
+            {
+                text: "당신은 2033년 서울의 폐허 속에 갇힌 생존자입니다. 지금은 폐허에서 살아남기 위한 선택을 해야 합니다.",
+                choices: [
+                    { text: "숨을 곳을 찾는다.", nextStage: 1, healthChange: -10 },
+                    { text: "도시를 떠나 다른 장소로 향한다.", nextStage: 2, healthChange: -5 }
+                ]
+            },
+            {
+                text: "어두운 골목길에서 적의 발소리가 들린다. 당신은 숨어야 한다.",
+                choices: [
+                    { text: "건물 안으로 숨어 들어간다.", nextStage: 3, healthChange: -5 },
+                    { text: "그 자리를 벗어나 다른 곳으로 이동한다.", nextStage: 4, healthChange: -15 }
+                ]
+            },
+            {
+                text: "길을 떠난 당신은 넓은 들판에 도달했다. 하지만 위협적인 표식을 발견했다.",
+                choices: [
+                    { text: "표식을 조사한다.", nextStage: 5, healthChange: -10 },
+                    { text: "무시하고 지나간다.", nextStage: 6, healthChange: 0 }
+                ]
+            },
+            {
+                text: "앞에 잠긴 철문이 보입니다. 열쇠가 필요합니다.",
+                choices: [
+                    { text: "열쇠로 문을 연다.", nextStage: 7, healthChange: 0, requiredItem: "열쇠" },
+                    { text: "다른 길을 찾는다.", nextStage: 2, healthChange: -5 }
+                ]
+            },
+            {
+                text: "당신은 안전한 장소에 도착했습니다. 게임 클리어!",
+                choices: []
+            }
+        ];
+
+        // 아이템을 획득하는 랜덤 이벤트
+        const randomEvents = [
+            {
+                text: "낡은 상자에서 녹슨 열쇠를 발견했습니다.",
+                choices: [
+                    { text: "열쇠를 주운다.", healthChange: 0, nextStage: currentStage, addItem: "열쇠" },
+                    { text: "열쇠를 무시한다.", healthChange: 0, nextStage: currentStage }
+                ]
+            }
+        ];
+
+        // 게임 진행 화면 표시
+        function displayStory() {
+            const storyText = document.getElementById("story-text");
+            const choicesDiv = document.getElementById("choices");
+            const statusDiv = document.getElementById("status");
+
+            storyText.textContent = '';
+            choicesDiv.innerHTML = '';
+
+            const currentText = storyData[currentStage].text;
+            let charIndex = 0;
+            isTyping = true;
+
+            if (typingInterval) clearInterval(typingInterval);
+
+            typingInterval = setInterval(() => {
+                if (charIndex < currentText.length) {
+                    storyText.textContent += currentText[charIndex];
+                    charIndex++;
+                } else {
+                    clearInterval(typingInterval);
+                    isTyping = false;
+                    displayChoices();
+                }
+            }, typingSpeed);
+
+            storyText.onclick = () => {
+                if (isTyping) {
+                    clearInterval(typingInterval);
+                    storyText.textContent = currentText;
+                    isTyping = false;
+                    displayChoices();
+                }
+            };
+
+            statusDiv.textContent = `체력: ${playerHealth} | 아이템: ${playerItems.join(", ") || "없음"}`;
+        }
+
+        // 선택지 표시 함수
+        function displayChoices() {
+            const choicesDiv = document.getElementById("choices");
+            storyData[currentStage].choices.forEach(choice => {
+                const button = document.createElement("button");
+                button.classList.add("choice-button");
+                button.textContent = choice.text;
+
+                if (choice.requiredItem && !playerItems.includes(choice.requiredItem)) {
+                    button.classList.add("disabled");
+                    button.disabled = true;
+                } else {
+                    button.onclick = () => makeChoice(choice);
+                }
+
+                choicesDiv.appendChild(button);
+            });
+        }
+
+        // 선택지 처리
+        function makeChoice(choice) {
+            playerHealth += choice.healthChange;
+            currentStage = choice.nextStage;
+
+            if (choice.addItem) {
+                playerItems.push(choice.addItem);
+            }
+
+            if (Math.random() < 0.5) {
+                triggerRandomEvent();
+            } else {
+                checkGameState();
+            }
+        }
+
+        // 랜덤 이벤트 발생 함수
+        function triggerRandomEvent() {
+            const randomEvent = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+            displayRandomEvent(randomEvent);
+        }
+
+        // 랜덤 이벤트 표시
+        function displayRandomEvent(event) {
+            const storyText = document.getElementById("story-text");
+            const choicesDiv = document.getElementById("choices");
+            storyText.textContent = event.text;
+            choicesDiv.innerHTML = '';
+
+            event.choices.forEach(choice => {
+                const button = document.createElement("button");
+                button.classList.add("choice-button");
+                button.textContent = choice.text;
+                button.onclick = () => {
+                    if (choice.addItem) {
+                        playerItems.push(choice.addItem);
+                    }
+                    currentStage = choice.nextStage;
+                    checkGameState();
+                };
+                choicesDiv.appendChild(button);
+            });
+        }
+
+        // 게임 상태 확인
+        function checkGameState() {
+            if (playerHealth <= 0) {
+                alert("체력이 모두 소진되었습니다. 게임 오버!");
+                resetGame();
+            } else if (currentStage >= storyData.length) {
+                alert("게임을 클리어했습니다!");
+                resetGame();
+            } else {
+                displayStory();
+            }
+        }
+
+        // 게임 초기화
+        function resetGame() {
+            playerHealth = 100;
+            currentStage = 0;
+            playerItems = [];
+            displayStory();
+        }
+
+        // 게임 시작
+        resetGame();
+    </script>
+</body>
+</html>
