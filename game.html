@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>텍스트 어드벤처 게임</title>
+    <title>서울 2033 - 텍스트 어드벤처 게임</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -17,20 +17,16 @@
             justify-content: center;
             height: 100vh;
             position: relative;
-            overflow: hidden;
         }
         .game-container {
             max-width: 800px;
             text-align: left;
             padding: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
-            position: relative;
-            z-index: 1;
         }
         .story-text {
             margin-bottom: 20px;
-            font-size: 1.2em;
+            min-height: 100px;
+            white-space: pre-wrap;
         }
         .choice-buttons {
             display: flex;
@@ -47,52 +43,39 @@
         .choice-button:hover {
             background-color: #555;
         }
-        .status, .items {
+        .status, .inventory {
             margin-top: 20px;
             font-size: 1.1em;
         }
-        .items {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+        .heart {
+            color: red;
+            font-size: 1.5em;
         }
-        .item-box {
-            border: 1px solid #888;
-            padding: 5px 10px;
-            border-radius: 5px;
-            background-color: #222;
-        }
-        .damage-effect {
-            position: absolute;
+        .overlay {
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(circle, rgba(255, 0, 0, 0.2) 20%, transparent 70%);
-            opacity: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            z-index: 10;
-            box-shadow: 0 0 0 100px rgba(255, 0, 0, 0.5);
-        }
-        .damage-text {
-            color: #ff4444;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .hearts {
-            margin-top: 20px;
-            font-size: 2em;
-            color: #ff4444;
+            box-shadow: 0 0 100px 20px rgba(255, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
         .restart-button {
-            display: none;
-            margin-top: 20px;
-            padding: 10px 20px;
             background-color: #ff4444;
             color: white;
+            padding: 10px 20px;
             border: none;
-            border-radius: 5px;
             cursor: pointer;
+            display: none;
+            margin-top: 20px;
+        }
+        .inventory {
+            border: 1px solid #555;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -101,119 +84,150 @@
         <div id="story-text" class="story-text"></div>
         <div id="choices" class="choice-buttons"></div>
         <div id="status" class="status"></div>
-        <div id="hearts" class="hearts"></div>
-        <div id="items" class="items"></div>
-        <div id="damage-text" class="damage-text"></div>
+        <div id="inventory" class="inventory">아이템: 없음</div>
         <button id="restart-button" class="restart-button" onclick="resetGame()">다시 시작</button>
     </div>
-    <div id="damage-effect" class="damage-effect"></div>
+    <div id="overlay" class="overlay"></div>
 
     <script>
         let playerHealth = 5;
         let currentStage = 0;
-        let items = {};
+        let inventory = {};
 
-        // 하트 아이콘 표시
-        function updateHearts() {
-            const heartsDiv = document.getElementById("hearts");
-            heartsDiv.innerHTML = '❤️'.repeat(playerHealth);
+        // 하트 아이콘으로 체력 표시
+        function getHearts() {
+            return '❤️'.repeat(playerHealth);
         }
 
-        // 게임 지문과 선택지 정의
+        // 스토리 데이터
         const storyData = [
             {
-                text: "당신은 2033년 서울의 폐허 속에 갇힌 생존자입니다. 지금은 폐허에서 살아남기 위한 선택을 해야 합니다.",
+                text: "2033년 서울, 폐허가 된 도시에서 당신은 생존을 위해 방안을 찾고 있습니다.",
                 choices: [
-                    { text: "숨을 곳을 찾는다.", nextStage: 1, healthChange: -1, damageReason: "폐허에서 미끄러짐" },
-                    { text: "도시를 떠나 다른 장소로 향한다.", nextStage: 2, healthChange: -1, damageReason: "장거리 이동으로 인한 피로" }
+                    { text: "버려진 건물로 들어간다.", nextStage: 1 },
+                    { text: "도로를 따라 걷는다.", nextStage: 2 }
                 ]
             },
             {
-                text: "어두운 골목길에서 적의 발소리가 들린다. 당신은 숨어야 한다.",
+                text: "건물 안에서 낡은 상자를 발견했습니다. 열쇠가 들어 있습니다.",
                 choices: [
-                    { text: "건물 안으로 숨어 들어간다.", nextStage: 3, healthChange: -1, damageReason: "날카로운 파편에 긁힘" },
-                    { text: "그 자리를 벗어나 다른 곳으로 이동한다.", nextStage: 4, healthChange: -2, damageReason: "적과의 몸싸움" }
+                    { text: "열쇠를 줍는다.", nextStage: 3, addItem: '열쇠' },
+                    { text: "그냥 지나친다.", nextStage: 3 }
                 ]
             },
             {
-                text: "당신은 안전한 장소에 도착했습니다. 게임 클리어!",
+                text: "당신은 도로에서 멀리 적의 무리를 발견했습니다.",
+                choices: [
+                    { text: "숨어서 기다린다.", nextStage: 4, healthChange: -1 },
+                    { text: "다른 길로 돌아간다.", nextStage: 5 }
+                ]
+            },
+            {
+                text: "잠긴 문 앞에 도착했습니다.",
+                choices: [
+                    { text: "열쇠로 문을 연다.", nextStage: 6, requires: '열쇠' },
+                    { text: "문을 부수려고 시도한다.", nextStage: 5, healthChange: -1 }
+                ]
+            },
+            {
+                text: "무리를 피했지만 체력이 소진되었습니다. 게임 오버!",
+                choices: []
+            },
+            {
+                text: "당신은 무사히 탈출했습니다. 게임 클리어!",
                 choices: []
             }
         ];
 
-        // 부상 이펙트 표시 함수
-        function triggerDamageEffect(reason) {
-            const damageEffect = document.getElementById("damage-effect");
-            const damageText = document.getElementById("damage-text");
-
-            damageText.textContent = `${reason}으로 인해 피해를 입었습니다!`;
-
-            damageEffect.style.opacity = '1';
-            setTimeout(() => {
-                damageEffect.style.opacity = '0';
-                checkGameState();
-            }, 500);
-        }
-
-        // 선택지 처리 함수
-        function makeChoice(choice) {
-            playerHealth += choice.healthChange;
-            currentStage = choice.nextStage;
-
-            if (choice.healthChange < 0) {
-                triggerDamageEffect(choice.damageReason);
-            } else {
-                checkGameState();
+        // 타이핑 애니메이션
+        function typeText(element, text, callback) {
+            element.textContent = '';
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(type, 30);
+                } else if (callback) {
+                    callback();
+                }
             }
+            type();
         }
 
-        // 게임 상태 확인 함수
-        function checkGameState() {
-            updateHearts();
-
-            if (playerHealth <= 0) {
-                document.getElementById("story-text").textContent = "체력이 모두 소진되었습니다. 게임 오버!";
-                document.getElementById("choices").innerHTML = '';
-                document.getElementById("restart-button").style.display = 'block';
-            } else if (currentStage >= storyData.length) {
-                document.getElementById("story-text").textContent = "게임을 클리어했습니다!";
-                document.getElementById("choices").innerHTML = '';
-                document.getElementById("restart-button").style.display = 'block';
-            } else {
-                displayStory();
-            }
+        // 부상 이펙트
+        function showInjuryEffect() {
+            const overlay = document.getElementById('overlay');
+            overlay.style.opacity = '1';
+            setTimeout(() => overlay.style.opacity = '0', 500);
         }
 
-        // 게임 초기화 함수
-        function resetGame() {
-            playerHealth = 5;
-            currentStage = 0;
-            items = {};
-            document.getElementById("damage-text").textContent = '';
-            document.getElementById("restart-button").style.display = 'none';
-            updateHearts();
-            displayStory();
-        }
-
-        // 게임 화면 표시 함수
+        // 게임 상태 표시
         function displayStory() {
             const storyText = document.getElementById("story-text");
             const choicesDiv = document.getElementById("choices");
+            const statusDiv = document.getElementById("status");
+            const inventoryDiv = document.getElementById("inventory");
 
-            storyText.textContent = storyData[currentStage].text;
+            let stage = storyData[currentStage];
             choicesDiv.innerHTML = '';
+            typeText(storyText, stage.text, () => {
+                stage.choices.forEach(choice => {
+                    const button = document.createElement("button");
+                    button.classList.add("choice-button");
+                    button.textContent = choice.text;
 
-            storyData[currentStage].choices.forEach(choice => {
-                const button = document.createElement("button");
-                button.classList.add("choice-button");
-                button.textContent = choice.text;
-                button.onclick = () => makeChoice(choice);
-                choicesDiv.appendChild(button);
+                    if (choice.requires && !inventory[choice.requires]) {
+                        button.disabled = true;
+                        button.textContent += " (필요한 아이템: " + choice.requires + ")";
+                    }
+
+                    button.onclick = () => makeChoice(choice);
+                    choicesDiv.appendChild(button);
+                });
             });
+
+            statusDiv.textContent = `체력: ${getHearts()}`;
+            inventoryDiv.textContent = `아이템: ${getInventoryText()}`;
         }
 
-        // 게임 시작
-        resetGame();
+        // 아이템 표시
+        function getInventoryText() {
+            return Object.entries(inventory).map(([item, count]) => `${item} x${count}`).join(', ') || '없음';
+        }
+
+        // 선택지 처리
+        function makeChoice(choice) {
+            if (choice.addItem) {
+                inventory[choice.addItem] = (inventory[choice.addItem] || 0) + 1;
+            }
+            if (choice.healthChange) {
+                playerHealth += choice.healthChange;
+                if (choice.healthChange < 0) showInjuryEffect();
+            }
+
+            currentStage = choice.nextStage;
+            checkGameState();
+        }
+
+        // 게임 상태 확인
+        function checkGameState() {
+            if (playerHealth <= 0) {
+                currentStage = 4; // 게임 오버 지문으로 이동
+            }
+            displayStory();
+        }
+
+        // 게임 재시작
+        function resetGame() {
+            playerHealth = 5;
+            currentStage = 0;
+            inventory = {};
+            document.getElementById("restart-button").style.display = 'none';
+            displayStory();
+        }
+
+        displayStory();
     </script>
 </body>
 </html>
