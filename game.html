@@ -45,17 +45,28 @@
         .choice-button:hover {
             background-color: #555;
         }
-        .status {
+        .status, .items {
             margin-top: 20px;
             font-size: 1.1em;
+        }
+        .items {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .item-box {
+            border: 1px solid #888;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: #222;
         }
         .damage-effect {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 0, 0, 0.5);
+            width: 100vw;
+            height: 100vh;
+            box-shadow: 0 0 0 100px rgba(255, 0, 0, 0.5);
             opacity: 0;
             pointer-events: none;
             z-index: 10;
@@ -72,6 +83,7 @@
         <div id="story-text" class="story-text"></div>
         <div id="choices" class="choice-buttons"></div>
         <div id="status" class="status"></div>
+        <div id="items" class="items"></div>
         <div id="damage-text" class="damage-text"></div>
     </div>
     <div id="damage-effect" class="damage-effect"></div>
@@ -79,8 +91,7 @@
     <script>
         let playerHealth = 100;
         let currentStage = 0;
-        let lastRandomEventIndex = null;
-        let usedOneTimeEvents = new Set();
+        let items = {};
 
         // 게임 지문과 선택지 정의
         const storyData = [
@@ -99,29 +110,21 @@
                 ]
             },
             {
-                text: "당신은 안전한 장소에 도착했습니다. 게임 클리어!",
-                choices: []
-            }
-        ];
-
-        // 랜덤 이벤트 정의
-        const randomEvents = [
-            {
-                id: "building_noise",
-                text: "낡은 건물에서 소리를 들었다. 누군가 있는 것 같다.",
+                text: "낡은 건물에서 열쇠를 발견했습니다.",
                 choices: [
-                    { text: "건물 안으로 들어가 조사한다.", healthChange: -10 },
-                    { text: "위험하니 건물을 피해 간다.", healthChange: -5 }
-                ],
-                oneTime: true
+                    { text: "열쇠를 주운다.", nextStage: 5, addItem: "열쇠" }
+                ]
             },
             {
-                id: "sudden_rain",
-                text: "갑자기 비가 쏟아진다. 당신은 몸을 피해야 한다.",
+                text: "잠긴 문을 발견했습니다.",
                 choices: [
-                    { text: "근처 버려진 차량에 숨는다.", healthChange: 0 },
-                    { text: "비를 맞으며 계속 이동한다.", healthChange: -10 }
+                    { text: "열쇠로 문을 연다.", nextStage: 6, requiredItem: "열쇠" },
+                    { text: "다른 길을 찾는다.", nextStage: 4 }
                 ]
+            },
+            {
+                text: "당신은 안전한 장소에 도착했습니다. 게임 클리어!",
+                choices: []
             }
         ];
 
@@ -130,9 +133,7 @@
             const damageEffect = document.getElementById("damage-effect");
             const damageText = document.getElementById("damage-text");
 
-            if (reason) {
-                damageText.textContent = `${reason}으로 인해 ${Math.abs(damage)}의 피해를 입었습니다!`;
-            }
+            damageText.textContent = `${reason}으로 인해 ${Math.abs(damage)}의 피해를 입었습니다!`;
 
             damageEffect.style.opacity = '1';
             setTimeout(() => {
@@ -141,34 +142,39 @@
             }, 500);
         }
 
-        // 랜덤 이벤트 발생 함수
-        function triggerRandomEvent() {
-            let availableEvents = randomEvents.filter(event => 
-                !usedOneTimeEvents.has(event.id) && event.id !== lastRandomEventIndex
-            );
-
-            if (availableEvents.length === 0) return;
-
-            const randomIndex = Math.floor(Math.random() * availableEvents.length);
-            const event = availableEvents[randomIndex];
-
-            if (event.oneTime) {
-                usedOneTimeEvents.add(event.id);
+        // 아이템 업데이트 함수
+        function updateItems() {
+            const itemsDiv = document.getElementById("items");
+            itemsDiv.innerHTML = '';
+            for (const [item, count] of Object.entries(items)) {
+                const itemBox = document.createElement("div");
+                itemBox.classList.add("item-box");
+                itemBox.textContent = `${item} ×${count}`;
+                itemsDiv.appendChild(itemBox);
             }
-
-            lastRandomEventIndex = event.id;
-            displayRandomEvent(event);
         }
 
         // 선택지 처리 함수
         function makeChoice(choice) {
+            if (choice.requiredItem && !items[choice.requiredItem]) {
+                alert(`이 선택을 하려면 ${choice.requiredItem}이 필요합니다.`);
+                return;
+            }
+
+            if (choice.addItem) {
+                if (items[choice.addItem]) {
+                    items[choice.addItem]++;
+                } else {
+                    items[choice.addItem] = 1;
+                }
+                updateItems();
+            }
+
             playerHealth += choice.healthChange;
             currentStage = choice.nextStage;
 
             if (choice.healthChange < 0) {
                 triggerDamageEffect(choice.damageReason, choice.healthChange);
-            } else if (Math.random() < 0.5) {
-                triggerRandomEvent();
             } else {
                 checkGameState();
             }
@@ -191,12 +197,13 @@
         function resetGame() {
             playerHealth = 100;
             currentStage = 0;
-            usedOneTimeEvents.clear();
-            lastRandomEventIndex = null;
+            items = {};
+            document.getElementById("damage-text").textContent = '';
+            updateItems();
             displayStory();
         }
 
-        // 게임 화면 표시
+        // 게임 화면 표시 함수
         function displayStory() {
             const storyText = document.getElementById("story-text");
             const choicesDiv = document.getElementById("choices");
