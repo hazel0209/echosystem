@@ -16,18 +16,19 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            position: relative;
+            overflow: hidden;
         }
         .game-container {
             max-width: 800px;
-            width: 100%;
+            text-align: left;
             padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
         }
         .story-text {
             margin-bottom: 20px;
-            cursor: pointer;
-            min-height: 100px; /* 타이핑 효과 시 화면 깜빡임 방지 */
-            text-align: left;
-            white-space: pre-wrap;
+            font-size: 1.2em;
         }
         .choice-buttons {
             display: flex;
@@ -40,19 +41,29 @@
             border: 1px solid #444;
             padding: 10px;
             cursor: pointer;
-            text-align: left;
         }
         .choice-button:hover {
             background-color: #555;
         }
-        .choice-button.disabled {
-            background-color: #555;
-            color: #888;
-            cursor: not-allowed;
-        }
         .status {
             margin-top: 20px;
             font-size: 1.1em;
+        }
+        .damage-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .damage-text {
+            color: #ff4444;
+            font-weight: bold;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -61,45 +72,30 @@
         <div id="story-text" class="story-text"></div>
         <div id="choices" class="choice-buttons"></div>
         <div id="status" class="status"></div>
+        <div id="damage-text" class="damage-text"></div>
     </div>
+    <div id="damage-effect" class="damage-effect"></div>
 
     <script>
         let playerHealth = 100;
         let currentStage = 0;
-        let playerItems = []; // 플레이어가 소유한 아이템
-
-        let typingSpeed = 50; // 타이핑 속도 (밀리초 단위)
-        let typingInterval;
-        let isTyping = false;
+        let lastRandomEventIndex = null;
+        let usedOneTimeEvents = new Set();
 
         // 게임 지문과 선택지 정의
         const storyData = [
             {
                 text: "당신은 2033년 서울의 폐허 속에 갇힌 생존자입니다. 지금은 폐허에서 살아남기 위한 선택을 해야 합니다.",
                 choices: [
-                    { text: "숨을 곳을 찾는다.", nextStage: 1, healthChange: -10 },
-                    { text: "도시를 떠나 다른 장소로 향한다.", nextStage: 2, healthChange: -5 }
+                    { text: "숨을 곳을 찾는다.", nextStage: 1, healthChange: -10, damageReason: "폐허에서 미끄러짐" },
+                    { text: "도시를 떠나 다른 장소로 향한다.", nextStage: 2, healthChange: -5, damageReason: "장거리 이동으로 인한 피로" }
                 ]
             },
             {
                 text: "어두운 골목길에서 적의 발소리가 들린다. 당신은 숨어야 한다.",
                 choices: [
-                    { text: "건물 안으로 숨어 들어간다.", nextStage: 3, healthChange: -5 },
-                    { text: "그 자리를 벗어나 다른 곳으로 이동한다.", nextStage: 4, healthChange: -15 }
-                ]
-            },
-            {
-                text: "길을 떠난 당신은 넓은 들판에 도달했다. 하지만 위협적인 표식을 발견했다.",
-                choices: [
-                    { text: "표식을 조사한다.", nextStage: 5, healthChange: -10 },
-                    { text: "무시하고 지나간다.", nextStage: 6, healthChange: 0 }
-                ]
-            },
-            {
-                text: "앞에 잠긴 철문이 보입니다. 열쇠가 필요합니다.",
-                choices: [
-                    { text: "열쇠로 문을 연다.", nextStage: 7, healthChange: 0, requiredItem: "열쇠" },
-                    { text: "다른 길을 찾는다.", nextStage: 2, healthChange: -5 }
+                    { text: "건물 안으로 숨어 들어간다.", nextStage: 3, healthChange: -5, damageReason: "날카로운 파편에 긁힘" },
+                    { text: "그 자리를 벗어나 다른 곳으로 이동한다.", nextStage: 4, healthChange: -15, damageReason: "적과의 몸싸움" }
                 ]
             },
             {
@@ -108,119 +104,77 @@
             }
         ];
 
-        // 아이템을 획득하는 랜덤 이벤트
+        // 랜덤 이벤트 정의
         const randomEvents = [
             {
-                text: "낡은 상자에서 녹슨 열쇠를 발견했습니다.",
+                id: "building_noise",
+                text: "낡은 건물에서 소리를 들었다. 누군가 있는 것 같다.",
                 choices: [
-                    { text: "열쇠를 주운다.", healthChange: 0, nextStage: currentStage, addItem: "열쇠" },
-                    { text: "열쇠를 무시한다.", healthChange: 0, nextStage: currentStage }
+                    { text: "건물 안으로 들어가 조사한다.", healthChange: -10 },
+                    { text: "위험하니 건물을 피해 간다.", healthChange: -5 }
+                ],
+                oneTime: true
+            },
+            {
+                id: "sudden_rain",
+                text: "갑자기 비가 쏟아진다. 당신은 몸을 피해야 한다.",
+                choices: [
+                    { text: "근처 버려진 차량에 숨는다.", healthChange: 0 },
+                    { text: "비를 맞으며 계속 이동한다.", healthChange: -10 }
                 ]
             }
         ];
 
-        // 게임 진행 화면 표시
-        function displayStory() {
-            const storyText = document.getElementById("story-text");
-            const choicesDiv = document.getElementById("choices");
-            const statusDiv = document.getElementById("status");
+        // 부상 이펙트 표시 함수
+        function triggerDamageEffect(reason, damage) {
+            const damageEffect = document.getElementById("damage-effect");
+            const damageText = document.getElementById("damage-text");
 
-            storyText.textContent = '';
-            choicesDiv.innerHTML = '';
+            if (reason) {
+                damageText.textContent = `${reason}으로 인해 ${Math.abs(damage)}의 피해를 입었습니다!`;
+            }
 
-            const currentText = storyData[currentStage].text;
-            let charIndex = 0;
-            isTyping = true;
-
-            if (typingInterval) clearInterval(typingInterval);
-
-            typingInterval = setInterval(() => {
-                if (charIndex < currentText.length) {
-                    storyText.textContent += currentText[charIndex];
-                    charIndex++;
-                } else {
-                    clearInterval(typingInterval);
-                    isTyping = false;
-                    displayChoices();
-                }
-            }, typingSpeed);
-
-            storyText.onclick = () => {
-                if (isTyping) {
-                    clearInterval(typingInterval);
-                    storyText.textContent = currentText;
-                    isTyping = false;
-                    displayChoices();
-                }
-            };
-
-            statusDiv.textContent = `체력: ${playerHealth} | 아이템: ${playerItems.join(", ") || "없음"}`;
+            damageEffect.style.opacity = '1';
+            setTimeout(() => {
+                damageEffect.style.opacity = '0';
+                checkGameState();
+            }, 500);
         }
 
-        // 선택지 표시 함수
-        function displayChoices() {
-            const choicesDiv = document.getElementById("choices");
-            storyData[currentStage].choices.forEach(choice => {
-                const button = document.createElement("button");
-                button.classList.add("choice-button");
-                button.textContent = choice.text;
+        // 랜덤 이벤트 발생 함수
+        function triggerRandomEvent() {
+            let availableEvents = randomEvents.filter(event => 
+                !usedOneTimeEvents.has(event.id) && event.id !== lastRandomEventIndex
+            );
 
-                if (choice.requiredItem && !playerItems.includes(choice.requiredItem)) {
-                    button.classList.add("disabled");
-                    button.disabled = true;
-                } else {
-                    button.onclick = () => makeChoice(choice);
-                }
+            if (availableEvents.length === 0) return;
 
-                choicesDiv.appendChild(button);
-            });
+            const randomIndex = Math.floor(Math.random() * availableEvents.length);
+            const event = availableEvents[randomIndex];
+
+            if (event.oneTime) {
+                usedOneTimeEvents.add(event.id);
+            }
+
+            lastRandomEventIndex = event.id;
+            displayRandomEvent(event);
         }
 
-        // 선택지 처리
+        // 선택지 처리 함수
         function makeChoice(choice) {
             playerHealth += choice.healthChange;
             currentStage = choice.nextStage;
 
-            if (choice.addItem) {
-                playerItems.push(choice.addItem);
-            }
-
-            if (Math.random() < 0.5) {
+            if (choice.healthChange < 0) {
+                triggerDamageEffect(choice.damageReason, choice.healthChange);
+            } else if (Math.random() < 0.5) {
                 triggerRandomEvent();
             } else {
                 checkGameState();
             }
         }
 
-        // 랜덤 이벤트 발생 함수
-        function triggerRandomEvent() {
-            const randomEvent = randomEvents[Math.floor(Math.random() * randomEvents.length)];
-            displayRandomEvent(randomEvent);
-        }
-
-        // 랜덤 이벤트 표시
-        function displayRandomEvent(event) {
-            const storyText = document.getElementById("story-text");
-            const choicesDiv = document.getElementById("choices");
-            storyText.textContent = event.text;
-            choicesDiv.innerHTML = '';
-
-            event.choices.forEach(choice => {
-                const button = document.createElement("button");
-                button.classList.add("choice-button");
-                button.textContent = choice.text;
-                button.onclick = () => {
-                    if (choice.addItem) {
-                        playerItems.push(choice.addItem);
-                    }
-                    currentStage = choice.nextStage;
-                    checkGameState();
-                };
-                choicesDiv.appendChild(button);
-            });
-        }
-
-        // 게임 상태 확인
+        // 게임 상태 확인 함수
         function checkGameState() {
             if (playerHealth <= 0) {
                 alert("체력이 모두 소진되었습니다. 게임 오버!");
@@ -233,12 +187,33 @@
             }
         }
 
-        // 게임 초기화
+        // 게임 초기화 함수
         function resetGame() {
             playerHealth = 100;
             currentStage = 0;
-            playerItems = [];
+            usedOneTimeEvents.clear();
+            lastRandomEventIndex = null;
             displayStory();
+        }
+
+        // 게임 화면 표시
+        function displayStory() {
+            const storyText = document.getElementById("story-text");
+            const choicesDiv = document.getElementById("choices");
+            const statusDiv = document.getElementById("status");
+
+            storyText.textContent = storyData[currentStage].text;
+            choicesDiv.innerHTML = '';
+
+            storyData[currentStage].choices.forEach(choice => {
+                const button = document.createElement("button");
+                button.classList.add("choice-button");
+                button.textContent = choice.text;
+                button.onclick = () => makeChoice(choice);
+                choicesDiv.appendChild(button);
+            });
+
+            statusDiv.textContent = `체력: ${playerHealth}`;
         }
 
         // 게임 시작
