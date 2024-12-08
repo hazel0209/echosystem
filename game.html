@@ -25,6 +25,8 @@
             padding: 20px;
             background: rgba(0, 0, 0, 0.7);
             border-radius: 10px;
+            position: relative;
+            z-index: 1;
         }
         .story-text {
             margin-bottom: 20px;
@@ -66,15 +68,31 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            box-shadow: 0 0 0 100px rgba(255, 0, 0, 0.5);
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.2) 20%, transparent 70%);
             opacity: 0;
             pointer-events: none;
             z-index: 10;
+            box-shadow: 0 0 0 100px rgba(255, 0, 0, 0.5);
         }
         .damage-text {
             color: #ff4444;
             font-weight: bold;
             margin-top: 10px;
+        }
+        .hearts {
+            margin-top: 20px;
+            font-size: 2em;
+            color: #ff4444;
+        }
+        .restart-button {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -83,43 +101,38 @@
         <div id="story-text" class="story-text"></div>
         <div id="choices" class="choice-buttons"></div>
         <div id="status" class="status"></div>
+        <div id="hearts" class="hearts"></div>
         <div id="items" class="items"></div>
         <div id="damage-text" class="damage-text"></div>
+        <button id="restart-button" class="restart-button" onclick="resetGame()">다시 시작</button>
     </div>
     <div id="damage-effect" class="damage-effect"></div>
 
     <script>
-        let playerHealth = 100;
+        let playerHealth = 5;
         let currentStage = 0;
         let items = {};
+
+        // 하트 아이콘 표시
+        function updateHearts() {
+            const heartsDiv = document.getElementById("hearts");
+            heartsDiv.innerHTML = '❤️'.repeat(playerHealth);
+        }
 
         // 게임 지문과 선택지 정의
         const storyData = [
             {
                 text: "당신은 2033년 서울의 폐허 속에 갇힌 생존자입니다. 지금은 폐허에서 살아남기 위한 선택을 해야 합니다.",
                 choices: [
-                    { text: "숨을 곳을 찾는다.", nextStage: 1, healthChange: -10, damageReason: "폐허에서 미끄러짐" },
-                    { text: "도시를 떠나 다른 장소로 향한다.", nextStage: 2, healthChange: -5, damageReason: "장거리 이동으로 인한 피로" }
+                    { text: "숨을 곳을 찾는다.", nextStage: 1, healthChange: -1, damageReason: "폐허에서 미끄러짐" },
+                    { text: "도시를 떠나 다른 장소로 향한다.", nextStage: 2, healthChange: -1, damageReason: "장거리 이동으로 인한 피로" }
                 ]
             },
             {
                 text: "어두운 골목길에서 적의 발소리가 들린다. 당신은 숨어야 한다.",
                 choices: [
-                    { text: "건물 안으로 숨어 들어간다.", nextStage: 3, healthChange: -5, damageReason: "날카로운 파편에 긁힘" },
-                    { text: "그 자리를 벗어나 다른 곳으로 이동한다.", nextStage: 4, healthChange: -15, damageReason: "적과의 몸싸움" }
-                ]
-            },
-            {
-                text: "낡은 건물에서 열쇠를 발견했습니다.",
-                choices: [
-                    { text: "열쇠를 주운다.", nextStage: 5, addItem: "열쇠" }
-                ]
-            },
-            {
-                text: "잠긴 문을 발견했습니다.",
-                choices: [
-                    { text: "열쇠로 문을 연다.", nextStage: 6, requiredItem: "열쇠" },
-                    { text: "다른 길을 찾는다.", nextStage: 4 }
+                    { text: "건물 안으로 숨어 들어간다.", nextStage: 3, healthChange: -1, damageReason: "날카로운 파편에 긁힘" },
+                    { text: "그 자리를 벗어나 다른 곳으로 이동한다.", nextStage: 4, healthChange: -2, damageReason: "적과의 몸싸움" }
                 ]
             },
             {
@@ -129,11 +142,11 @@
         ];
 
         // 부상 이펙트 표시 함수
-        function triggerDamageEffect(reason, damage) {
+        function triggerDamageEffect(reason) {
             const damageEffect = document.getElementById("damage-effect");
             const damageText = document.getElementById("damage-text");
 
-            damageText.textContent = `${reason}으로 인해 ${Math.abs(damage)}의 피해를 입었습니다!`;
+            damageText.textContent = `${reason}으로 인해 피해를 입었습니다!`;
 
             damageEffect.style.opacity = '1';
             setTimeout(() => {
@@ -142,39 +155,13 @@
             }, 500);
         }
 
-        // 아이템 업데이트 함수
-        function updateItems() {
-            const itemsDiv = document.getElementById("items");
-            itemsDiv.innerHTML = '';
-            for (const [item, count] of Object.entries(items)) {
-                const itemBox = document.createElement("div");
-                itemBox.classList.add("item-box");
-                itemBox.textContent = `${item} ×${count}`;
-                itemsDiv.appendChild(itemBox);
-            }
-        }
-
         // 선택지 처리 함수
         function makeChoice(choice) {
-            if (choice.requiredItem && !items[choice.requiredItem]) {
-                alert(`이 선택을 하려면 ${choice.requiredItem}이 필요합니다.`);
-                return;
-            }
-
-            if (choice.addItem) {
-                if (items[choice.addItem]) {
-                    items[choice.addItem]++;
-                } else {
-                    items[choice.addItem] = 1;
-                }
-                updateItems();
-            }
-
             playerHealth += choice.healthChange;
             currentStage = choice.nextStage;
 
             if (choice.healthChange < 0) {
-                triggerDamageEffect(choice.damageReason, choice.healthChange);
+                triggerDamageEffect(choice.damageReason);
             } else {
                 checkGameState();
             }
@@ -182,12 +169,16 @@
 
         // 게임 상태 확인 함수
         function checkGameState() {
+            updateHearts();
+
             if (playerHealth <= 0) {
-                alert("체력이 모두 소진되었습니다. 게임 오버!");
-                resetGame();
+                document.getElementById("story-text").textContent = "체력이 모두 소진되었습니다. 게임 오버!";
+                document.getElementById("choices").innerHTML = '';
+                document.getElementById("restart-button").style.display = 'block';
             } else if (currentStage >= storyData.length) {
-                alert("게임을 클리어했습니다!");
-                resetGame();
+                document.getElementById("story-text").textContent = "게임을 클리어했습니다!";
+                document.getElementById("choices").innerHTML = '';
+                document.getElementById("restart-button").style.display = 'block';
             } else {
                 displayStory();
             }
@@ -195,11 +186,12 @@
 
         // 게임 초기화 함수
         function resetGame() {
-            playerHealth = 100;
+            playerHealth = 5;
             currentStage = 0;
             items = {};
             document.getElementById("damage-text").textContent = '';
-            updateItems();
+            document.getElementById("restart-button").style.display = 'none';
+            updateHearts();
             displayStory();
         }
 
@@ -207,7 +199,6 @@
         function displayStory() {
             const storyText = document.getElementById("story-text");
             const choicesDiv = document.getElementById("choices");
-            const statusDiv = document.getElementById("status");
 
             storyText.textContent = storyData[currentStage].text;
             choicesDiv.innerHTML = '';
@@ -219,8 +210,6 @@
                 button.onclick = () => makeChoice(choice);
                 choicesDiv.appendChild(button);
             });
-
-            statusDiv.textContent = `체력: ${playerHealth}`;
         }
 
         // 게임 시작
