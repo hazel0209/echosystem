@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>서울 2033 - 텍스트 어드벤처 게임</title>
+    <title>ECHOSYSTEM</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -24,9 +24,10 @@
             padding: 20px;
         }
         .story-text {
+            white-space: pre-line; /* 줄바꿈을 위해 필요 */
             margin-bottom: 20px;
-            min-height: 100px;
-            white-space: pre-wrap;
+            font-size: 1.2em;
+            min-height: 100px; /* 타이핑 효과 시 화면 깜빡임 방지 */
         }
         .choice-buttons {
             display: flex;
@@ -92,7 +93,13 @@
     <script>
         let playerHealth = 5;
         let currentStage = 0;
+        
+        let typingSpeed = 50; // 타이핑 속도 (밀리초 단위)
+        let typingInterval; // 타이핑을 제어하는 변수
+        let isTyping = false; // 타이핑 중인지 확인하는 변수
+        
         let inventory = {};
+        let completedRandomEvents = new Set();
 
         // 하트 아이콘으로 체력 표시
         function getHearts() {
@@ -100,60 +107,68 @@
         }
 
         // 스토리 데이터
-        const storyData = [
-            {
-                text: "2033년 서울, 폐허가 된 도시에서 당신은 생존을 위해 방안을 찾고 있습니다.",
-                choices: [
-                    { text: "버려진 건물로 들어간다.", nextStage: 1 },
-                    { text: "도로를 따라 걷는다.", nextStage: 2 }
-                ]
-            },
-            {
-                text: "건물 안에서 낡은 상자를 발견했습니다. 열쇠가 들어 있습니다.",
-                choices: [
-                    { text: "열쇠를 줍는다.", nextStage: 3, addItem: '열쇠' },
-                    { text: "그냥 지나친다.", nextStage: 3 }
-                ]
-            },
-            {
-                text: "당신은 도로에서 멀리 적의 무리를 발견했습니다.",
-                choices: [
-                    { text: "숨어서 기다린다.", nextStage: 4, healthChange: -1 },
-                    { text: "다른 길로 돌아간다.", nextStage: 5 }
-                ]
-            },
-            {
-                text: "잠긴 문 앞에 도착했습니다.",
-                choices: [
-                    { text: "열쇠로 문을 연다.", nextStage: 6, requires: '열쇠' },
-                    { text: "문을 부수려고 시도한다.", nextStage: 5, healthChange: -1 }
-                ]
-            },
-            {
-                text: "무리를 피했지만 체력이 소진되었습니다. 게임 오버!",
-                choices: []
-            },
-            {
-                text: "당신은 무사히 탈출했습니다. 게임 클리어!",
-                choices: []
-            }
-        ];
+       const story = [
+    // index 0
+    {
+        text: "[처음 뵙겠습니다. user 님:)]\n[저는 당신의 생존 보조를 위해 도입된 AI 투어 가이드, E.C.H.O. 입니다. 편안한 시간을 보내셨나요?]\n[오늘도 에코와 함께 지구에서의 즐거운 하루를 보내주시기 바랍니다!]",
+        choices: [
+            { text: "AI 투어?", nextIndex: 1, result: "[재알림: E.C.H.O는 21세기 사상 최첨단 홀로그램 기술과 학습 알고리즘으로 (주)그린미래에서 출시한 모델입니다.]\n[40년 전 전국적으로 발생한 대지진과 폭풍 속에서도 버틴 튼튼한 서버는 물론, 치사율 50% 이상의 자연재해와 식별 불가능한 신종 바이러스, 위협적인 사회와 무너진 경제 속에서도 여러분을 지켜줄 수 있도록 업데이트된 최첨단 AI, ♪에―코 퓨쳐♪]\n[주의: 최신 업데이트 버전이 아닐 경우 정확하지 않은 정보들을 안내해드릴 가능성이 있습니다.]" },
+            { text: "지구?", nextIndex: 1, result: "[재알림: E.C.H.O는 극한 상황의 지구 조건에서도 약 8천만 번의 연산을 거듭하여 최적의 생존 경로를 안내해드릴 수 있는 모델입니다.]\n[40년 전 전국적으로 발생한 대지진과 폭풍 속에서도 버틴 튼튼한 서버는 물론, 치사율 50% 이상의 자연재해와 식별 불가능한 신종 바이러스, 위협적인 사회와 무너진 경제 속에서도 여러분을 지켜줄 수 있도록 업데이트된 최첨단 AI, ♪에―코 퓨쳐♪]\n[주의: 최신 업데이트 버전이 아닐 경우 정확하지 않은 정보들을 안내해드릴 가능성이 있습니다.]" }
+        ]
+    },
+    
+    // index 1
+    {
+        text: "[다른 궁금한 사항이 있으실까요?]",
+        choices: [
+            { text: "지금 날짜는 어떻게 되지?", nextIndex: 2, result: "[...]\n[경고: user의 메모리 데이터 탐색에 실패했습니다.]\n[경고: user의 메모리 데이터 탐색에 실패했습니다.]\n[현재 날짜는 2078[년] 12[월] 17[일] 3:24[PM] 입니다.]\n[user의 메모리 갱신 오류를 발견했습니다. 예기치 못한 오류로 인해 복구가 불가능합니다.]\n[E.C.H.O: 매뉴얼 모드로 전환합니다...]\n\n[알림: 매뉴얼 모드 전환이 완료되었습니다.]" },
+        ]
+    },
+    
+    // index 2
+    {
+        text: "[예상치 못한 오류에 빠지셨군요. 하지만 괜찮습니다. 저, 에코는 성심성의껏 당신을 지원하는 것이 의무니까요.]\n[user, 당신의 마지막 기억은 거의 50년 전에 아직 멈춰있는 것 같습니다. 생존에 대한 지식, 근방 구역의 지리까지... 절망적이기 그지없는 상황이네요.]\n[결론부터 말씀드리자면 2030년 즈음, 갑작스럽게도 전국 곳곳에서 대지진과 태풍, 기상 이변과 같은 대규모의 재해가 발생했답니다.]\n[이 사건으로 인해 전국에서 확인된 사상자만 약 37억 명, 전체 인류의 50%를 웃도는 수의 사상자가 발생했죠.]\n[지금 주변에 보이는 뼛조각들과 천에 덮인 물체들이 그 증거랍니다. user의 정신적 안정을 위해 천을 들춰보는 행위는 권장하지 않을게요!]",
+        choices: [
+            { text: "그럼 이제 나는 어떻게 해야 해?", nextIndex: 3, result: "[하지만 걱정 마세요. 소수의 인간들은 아직도 공동체를 꾸리고 생존해가며 버티고 있답니다.]\n[몇몇 지방에서는 돌연변이 생물체가 출현했다고도 하지만, 그리 중요하진 않은 정보이니 넘어가죠!]\n[㈜그린미래의 최신작과 함께라면, 약 50년 전의 미래보다 27.08배 열악해진 환경 속에서도 견뎌낼 수 있습니다!]\n[비록 50년 전에 비해 지구의 해수면은 약 1.03m, 평균 기온은 7.3도 이상 상승한 환경이지만 이런 곳에도 여전히 조악하게 모방된 사회 시스템이 존재하니까요.]\n[하지만 기억하세요, 에코는 시스템의 한계로 직접 선택의 강요가 불가능합니다. 에코의 어드바이스를 참고해가면서 생존하고, 후회하지 않을 선택을 골라주시기 바랍니다.]\n\n[이곳에서 만들어가는 이야기는 오로지 당신의 것이니까요.]\n[다시 한 번 환영합니다. 작렬하는 자외선과 가뭄의 땅으로 뒤덮인 이곳은 여러분의 영원한 터전, 지구입니다!]" },
+        ]
+    },
+    
+    // index 3
+    {
+        text: "[알림: 목적지를 설정하는 데에 어려움을 겪고 계신 것 같네요.]\n[약 50년 간의 기억을 잃었다면 당연한 일이랍니다! 이 땅은 그동안 수많은 모습으로 뒤바뀌기도 했으니까요.]\n[해수면 상승과 자연재해로 인해 이미 약 30년 전, 이 지역 근방의 땅 70%는 바다에 잠겨버린 지 오래랍니다.]\n\n[중부와 서부는 드넓은 황무지가 펼쳐져 있습니다.]\n[가장 넓지만, 동시에 재해의 영향을 제일 크게 받은 만큼 가장 열악한 땅이라고 할 수 있죠. 공기의 질도 좋지 않답니다.]\n[최근 들리는 소문에 의하면 몇몇 생존자들이 비밀스러운 장소에서 살아가고 있다는 듯해요.]\n\n[반면 북부의 가장 좁은 지역은 근처 생존자들에게 골디락스라고 불린답니다.]\n[그만큼 아직까지는 가장 피해가 적고, 자급자족이 가능하며 부유층이 주로 몰려있다고 해요. 내분이 심각하다는 소문도 있고, 이 상황 속에서 돈이 얼마나 도움이 될지는 잘 모르겠지만요!]\n[정착을 위해 어디로 향하실 생각인가요?]",
+        choices: [
+            { text: "중서부로 향한다.", nextIndex: 4, result: "[목적지를 설정했습니다.]\n[황무지는 상대적으로 가까운 만큼 생존자들을 찾기 쉬울지도 몰라요.]\n[살아남기 위해서라도 나아갑시다!]" }
+            { text: "북부로 향한다.", nextIndex: 4, result: "[목적지를 설정했습니다.]\n[조금 먼 길을 떠나게 되겠지만, 확실히 북부의 비옥한 환경이라면 생존에는 안성맞춤이겠네요!]\n[빠르게 발걸음을 옮겨봅시다!]" }
+        ]
+    },
+    
+    // index 4
+    {
+        text: "생존자들은 당신의 진심을 확인하고 안심한 듯 보입니다.\n어떻게 하시겠습니까?",
+        choices: [
+            { text: "함께 머무르기로 한다.", nextIndex: 6, result: "당신은 생존자들과 협력하기로 했습니다." },
+            { text: "도움을 받고 떠난다.", nextIndex: 3, result: "도움을 받은 후 혼자 길을 떠났습니다." }
+        ]
+    },
+    
+    // index 5
+    {
+        text: "숨은 곳에서 적의 움직임을 관찰합니다.\n어떻게 하시겠습니까?",
+        choices: [
+            { text: "기회를 보며 공격한다.", nextIndex: 6, result: "당신은 적에게 기습을 가합니다." },
+            { text: "조용히 빠져나간다.", nextIndex: 3, result: "당신은 조용히 빠져나가는 데 성공했습니다." }
+        ]
+    },
+    
+    // index 6
+    {
+        text: "당신은 무사히 하루를 넘겼습니다.\n앞으로도 많은 도전이 기다리고 있습니다.",
+        choices: [
+            { text: "게임 종료", nextIndex: null, result: "수고하셨습니다! 게임이 종료되었습니다." }
+        ]
+    }
+];
 
-        // 타이핑 애니메이션
-        function typeText(element, text, callback) {
-            element.textContent = '';
-            let i = 0;
-            function type() {
-                if (i < text.length) {
-                    element.textContent += text.charAt(i);
-                    i++;
-                    setTimeout(type, 30);
-                } else if (callback) {
-                    callback();
-                }
-            }
-            type();
-        }
 
         // 부상 이펙트
         function showInjuryEffect() {
@@ -162,60 +177,145 @@
             setTimeout(() => overlay.style.opacity = '0', 500);
         }
 
-        // 게임 상태 표시
-        function displayStory() {
-            const storyText = document.getElementById("story-text");
-            const choicesDiv = document.getElementById("choices");
-            const statusDiv = document.getElementById("status");
-            const inventoryDiv = document.getElementById("inventory");
+        // 게임 상태 표시 (타이핑 효과 포함)
+function displayStory() {
+    const storyText = document.getElementById("story-text");
+    const choicesDiv = document.getElementById("choices");
+    const statusDiv = document.getElementById("status");
+    const inventoryDiv = document.getElementById("inventory");
 
-            let stage = storyData[currentStage];
-            choicesDiv.innerHTML = '';
-            typeText(storyText, stage.text, () => {
-                stage.choices.forEach(choice => {
-                    const button = document.createElement("button");
-                    button.classList.add("choice-button");
-                    button.textContent = choice.text;
+    storyText.textContent = ''; // 기존 텍스트 초기화
+    choicesDiv.innerHTML = ''; // 기존 선택지 초기화
 
-                    if (choice.requires && !inventory[choice.requires]) {
-                        button.disabled = true;
-                        button.textContent += " (필요한 아이템: " + choice.requires + ")";
-                    }
+    const currentText = story[currentStage].text;
+    let charIndex = 0;
+    isTyping = true;
 
-                    button.onclick = () => makeChoice(choice);
-                    choicesDiv.appendChild(button);
-                });
-            });
+    if (typingInterval) clearInterval(typingInterval);
 
-            statusDiv.textContent = `체력: ${getHearts()}`;
-            inventoryDiv.textContent = `아이템: ${getInventoryText()}`;
+    // 한 글자씩 타이핑 효과
+    typingInterval = setInterval(() => {
+        if (charIndex < currentText.length) {
+            storyText.textContent += currentText[charIndex];
+            charIndex++;
+        } else {
+            clearInterval(typingInterval);
+            isTyping = false;
+            displayChoices();
         }
+    }, typingSpeed);
+
+    // 클릭 시 즉시 타이핑 완료
+    storyText.onclick = () => {
+        if (isTyping) {
+            clearInterval(typingInterval);
+            storyText.textContent = currentText;
+            isTyping = false;
+            displayChoices();
+        }
+    };
+
+    statusDiv.textContent = `체력: ${getHearts()}`;
+    inventoryDiv.textContent = `아이템: ${getInventoryText()}`;
+}
+        // 선택지 표시 함수
+function displayChoices() {
+    const choicesDiv = document.getElementById("choices");
+    story[currentStage].choices.forEach(choice => {
+        const button = document.createElement("button");
+        button.classList.add("choice-button");
+        button.textContent = choice.text;
+
+        if (choice.requires && !inventory[choice.requires]) {
+            button.disabled = true;
+            button.textContent += ` (필요: ${choice.requires})`;
+        }
+
+        button.onclick = () => makeChoice(choice);
+        choicesDiv.appendChild(button);
+    });
+}
+// 하트 아이콘으로 체력 표시
+function getHearts() {
+    return '❤️'.repeat(playerHealth);
+}
+
+// 선택지 처리 함수
+function makeChoice(choice) {
+    const storyText = document.getElementById("story-text");
+    const choicesDiv = document.getElementById("choices");
+
+    storyText.textContent = ''; // 기존 텍스트 초기화
+    let charIndex = 0;
+    isTyping = true;
+
+    // 기존 타이핑 효과 함수
+    typingInterval = setInterval(() => {
+        if (charIndex < choice.result.length) {
+            storyText.textContent += choice.result[charIndex];
+            charIndex++;
+        } else {
+            clearInterval(typingInterval);
+            isTyping = false;
+            displayNextButton();  // 타이핑 효과가 끝나면 '다음으로' 버튼 표시
+        }
+    }, typingSpeed);
+
+    // 클릭 시 즉시 타이핑 완료
+    storyText.onclick = () => {
+        if (isTyping) {
+            clearInterval(typingInterval);
+            storyText.textContent = choice.result;
+            isTyping = false;
+            displayNextButton();
+        }
+    };
+
+    // '다음으로' 버튼을 표시하는 함수
+    function displayNextButton() {
+        // 기존 선택지를 모두 비우기
+        choicesDiv.innerHTML = '';
+
+        // '다음으로' 버튼 추가
+        const nextButton = document.createElement("button");
+        nextButton.classList.add("choice-button");
+        nextButton.textContent = "다음으로";
+
+      nextButton.onclick = () => {
+            // 확률 계산: 체력 감소
+            if (choice.healthChance && Math.random() < choice.healthChance) {
+                playerHealth += choice.healthChange;
+                if (choice.healthChange < 0) showInjuryEffect(); // 부상 이펙트
+            }
+
+            // 확률 계산: 아이템 획득
+            if (choice.itemChance && Math.random() < choice.itemChance) {
+                inventory[choice.addItem] = (inventory[choice.addItem] || 0) + 1;
+            }
+
+            // 선택한 후 다음 스테이지로 이동
+            currentStage = choice.nextIndex;
+            checkGameState();
+        };
+
+        choicesDiv.appendChild(nextButton);
+    }
+}
 
         // 아이템 표시
         function getInventoryText() {
             return Object.entries(inventory).map(([item, count]) => `${item} x${count}`).join(', ') || '없음';
         }
 
-        // 선택지 처리
-        function makeChoice(choice) {
-            if (choice.addItem) {
-                inventory[choice.addItem] = (inventory[choice.addItem] || 0) + 1;
-            }
-            if (choice.healthChange) {
-                playerHealth += choice.healthChange;
-                if (choice.healthChange < 0) showInjuryEffect();
-            }
-
-            currentStage = choice.nextStage;
-            checkGameState();
-        }
-
         // 게임 상태 확인
         function checkGameState() {
             if (playerHealth <= 0) {
-                currentStage = 4; // 게임 오버 지문으로 이동
+                document.getElementById("story-text").textContent = "체력이 고갈되어 사망했다.";
+                document.getElementById("choices").innerHTML = '';
+                document.getElementById("restart-button").style.display = 'block';
+            } else {
+                displayStory();
             }
-            displayStory();
         }
 
         // 게임 재시작
