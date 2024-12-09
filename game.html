@@ -52,17 +52,17 @@
             color: red;
             font-size: 1.5em;
         }
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            box-shadow: 0 0 100px 20px rgba(255, 0, 0, 0.5);
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
+     .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    box-shadow: 0 0 50px 20px rgba(255, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.8s ease; /* 지속 시간과 전환 효과 조정 */
+}
         .restart-button {
             background-color: #ff4444;
             color: white;
@@ -121,7 +121,7 @@
     {
         text: "[다른 궁금한 사항이 있으실까요?]",
         choices: [
-            { text: "지금 날짜는 어떻게 되지?", nextIndex: 2, result: "[...]\n[경고: user의 메모리 데이터 탐색에 실패했습니다.]\n[경고: user의 메모리 데이터 탐색에 실패했습니다.]\n[현재 날짜는 2078[년] 12[월] 17[일] 3:24[PM] 입니다.]\n[user의 메모리 갱신 오류를 발견했습니다. 예기치 못한 오류로 인해 복구가 불가능합니다.]\n[E.C.H.O: 매뉴얼 모드로 전환합니다...]\n\n[알림: 매뉴얼 모드 전환이 완료되었습니다.]" },
+            { text: "지금 날짜는 어떻게 되지?", nextIndex: 2, result: "[...]\n[경고: user의 메모리 데이터 탐색에 실패했습니다.]\n[경고: user의 메모리 데이터 탐색에 실패했습니다.]\n[현재 날짜는 2078[년] 10[월] 17[일] 3:24[PM] 입니다.]\n[user의 메모리 갱신 오류를 발견했습니다. 예기치 못한 오류로 인해 복구가 불가능합니다.]\n[E.C.H.O: 매뉴얼 모드로 전환합니다...]\n\n[알림: 매뉴얼 모드 전환이 완료되었습니다.]" },
         ]
     },
     
@@ -137,26 +137,60 @@
     {
         text: "[알림: 목적지를 설정하는 데에 어려움을 겪고 계신 것 같네요.]\n[약 50년 간의 기억을 잃었다면 당연한 일이랍니다! 이 땅은 그동안 수많은 모습으로 뒤바뀌기도 했으니까요.]\n[해수면 상승과 자연재해로 인해 이미 약 30년 전, 이 지역 근방의 땅 70%는 바다에 잠겨버린 지 오래랍니다.]\n\n[중부와 서부는 드넓은 황무지가 펼쳐져 있습니다.]\n[가장 넓지만, 동시에 재해의 영향을 제일 크게 받은 만큼 가장 열악한 땅이라고 할 수 있죠. 공기의 질도 좋지 않답니다.]\n[최근 들리는 소문에 의하면 몇몇 생존자들이 비밀스러운 장소에서 살아가고 있다는 듯해요.]\n\n[반면 북부의 가장 좁은 지역은 근처 생존자들에게 골디락스라고 불린답니다.]\n[그만큼 아직까지는 가장 피해가 적고, 자급자족이 가능하며 부유층이 주로 몰려있다고 해요. 내분이 심각하다는 소문도 있고, 이 상황 속에서 돈이 얼마나 도움이 될지는 잘 모르겠지만요!]\n[정착을 위해 어디로 향하실 생각인가요?]",
         choices: [
-            { text: "중서부로 향한다.", nextIndex: 4, result: "[목적지를 설정했습니다.]\n[황무지는 상대적으로 가까운 만큼 생존자들을 찾기 쉬울지도 몰라요.]\n[살아남기 위해서라도 나아갑시다!]" }
+            { text: "중서부로 향한다.", nextIndex: 4, result: "[목적지를 설정했습니다.]\n[황무지는 상대적으로 가까운 만큼 생존자들을 찾기 쉬울지도 몰라요.]\n[살아남기 위해서라도 나아갑시다!]" },
             { text: "북부로 향한다.", nextIndex: 4, result: "[목적지를 설정했습니다.]\n[조금 먼 길을 떠나게 되겠지만, 확실히 북부의 비옥한 환경이라면 생존에는 안성맞춤이겠네요!]\n[빠르게 발걸음을 옮겨봅시다!]" }
         ]
     },
     
     // index 4
     {
-        text: "생존자들은 당신의 진심을 확인하고 안심한 듯 보입니다.\n어떻게 하시겠습니까?",
+        text: "[경고: 과열을 감지했습니다. 에코를 저전력 모드로 전환합니다.]\n[곧 추위가 밀려올텐데, 아직 낮에는 더위가 기승이군요! 그래도 36도 정도의 열기라면 꽤 선선한 가을 낮의 날씨네요.]\n[아하, user에게는 다소 낯선 기후인가요? 제 계산에 따르면 그 때에 비해 일 강수량은 약 500mm 이상, 계절과 기온 변화의 주기는 115일 정도의 차이가 있을 거예요.]\n[하지만 중요한 건 이대로 있으면 열사병에 먼저 걸릴 지도 모른다는 거겠죠! 어떻게 할까요?]",
         choices: [
-            { text: "함께 머무르기로 한다.", nextIndex: 6, result: "당신은 생존자들과 협력하기로 했습니다." },
-            { text: "도움을 받고 떠난다.", nextIndex: 3, result: "도움을 받은 후 혼자 길을 떠났습니다." }
+            { text: "그늘진 곳을 찾아본다.", nextIndex: 5, baseResult: "[주위를 탐색중입니다.]",
+        healthChange: -1,                        // 체력 감소
+        healthChance: 0.4,                       // 체력 감소 확률: 40%
+        healthResult: "[탐색 실패.]\n[아무래도 이 주변 폐허에서는 그늘을 찾기는 어려운 일이죠!]\n[시야가 빙빙 돌 것 같은 더위지만, 조금 참으면서라도 나아가야겠어요.]", // 체력 감소 시 지문
+        failResult: "[운이 좋았네요, user! 마침 근처에서 조금 낡았지만 멀쩡히 기능하는 파라솔을 찾았으니까요.]\n[해가 조금 기울 때까지 한숨 돌리고 출발하는 게 좋겠어요.]" // 아무 이벤트도 없을 때의 지문
+            },
+            { text: "더위를 견디고 걸어간다.", nextIndex: 5, result: "[이열치열이라는 사자성어가 있으니까요! 인간의 기준에서는 시야가 빙빙 돌 것 같은 더위지만, 조금 참으면서라도 나아가보자구요.]",
+        healthChange: -1
+            }
         ]
     },
     
     // index 5
     {
-        text: "숨은 곳에서 적의 움직임을 관찰합니다.\n어떻게 하시겠습니까?",
+        text: "[알림: 생명체의 소음을 감지.]\n[아하, 깃털이 다 벗겨진 갈매기가 날고 있었군요! 어느새 바닷가 근처까지 온 모양이에요.]\n[user, 표정을 보아하니 왜 도심이었던 폐허 근처에 바다가 있는지 의아해하는 것 같네요?]\n[시뮬레이션 결과, 확실히 user의 기억 속 50년 전의 이곳은 육지였을 거예요. 해수면이 상승하면서 많은 건물과 육지가 바다에 잠겼거든요! 물 군데군데가 붉은 색을 띠는 것도 생명체의 죽음 때문이 아닌 온도 상승이 이유죠.]\n[그 때문인지는 몰라도, 최근들어 돌연변이 어류들은 많이 나오고 있답니다. 도구가 있으면 식량으로 쓸만한 생물을 손쉽게 잡을 수도 있을 것 같은데...]",
         choices: [
-            { text: "기회를 보며 공격한다.", nextIndex: 6, result: "당신은 적에게 기습을 가합니다." },
-            { text: "조용히 빠져나간다.", nextIndex: 3, result: "당신은 조용히 빠져나가는 데 성공했습니다." }
+            { text: "낚시도구를 찾아본다.", nextIndex: 6, result: "[바다 근처에서 도구를 찾는 과정은 그리 어렵지 않았네요! 조금 낡은 낚싯대지만 사용할 수는 있을 것 같아요.]",
+            addItem: "낚싯대"},
+            { text: "맨손낚시에 도전한다.", nextIndex: 6, baseResult: "[호기롭게 맨몸으로 물 속에 뛰어들면...]",
+             healthChange: -1,                // 체력 감소
+        healthChance: 0.8,               // 체력 감소 확률: 40%
+        healthResult: "\n[생각해보니, 수영을 할 수 있는지의 여부도 생각해본 적이 없었군요, user!]\n[열악한 상황 속에서라면 누구나 실수 한두번 정도는 하는 법이죠. 너무 마음에 담아두진 말아요.]\n[물론 오늘처럼 익사 직전까지 다다르는 상황은 없어야 할 것 같지만요!]", // 체력 감소 시의 결과
+        addItem: "고등어",             // 아이템 획득
+        itemChance: 0.2,                 // 아이템 획득 확률: 60%
+        itemResult: "[user, 평소 신체를 많이 단련시켰었나요? 생명력이 얼마 남지 않은 머리 둘 달린 고등어도 맨손으로 잡기는 정말이지 어려운 일인데요!]\n[배를 곯을 걱정은 없을 것 같습니다. 그야말로 월척이네요!]", // 아이템 획득 시의 결과
+        action: function() {
+            let healthDecreased = Math.random() < this.healthChance;
+            let itemFound = false;
+            if (!healthDecreased) {
+                // 체력이 감소하지 않으면 아이템을 획득할 수 있음
+                itemFound = Math.random() < this.itemChance;
+            }
+
+            let resultText = this.baseResult;
+            if (healthDecreased) {
+                resultText += " " + this.healthResult;
+            }
+            if (itemFound) {
+                resultText += " " + this.itemResult;
+            }
+
+            return resultText;
+        }
+    }
+]}
         ]
     },
     
@@ -171,11 +205,11 @@
 
 
         // 부상 이펙트
-        function showInjuryEffect() {
-            const overlay = document.getElementById('overlay');
-            overlay.style.opacity = '1';
-            setTimeout(() => overlay.style.opacity = '0', 500);
-        }
+      function showInjuryEffect() {
+    const overlay = document.getElementById('overlay');
+    overlay.style.opacity = '1';
+    setTimeout(() => overlay.style.opacity = '0', 500); // 깜빡임 지속 시간 조정
+}
 
         // 게임 상태 표시 (타이핑 효과 포함)
 function displayStory() {
@@ -249,10 +283,46 @@ function makeChoice(choice) {
     let charIndex = 0;
     isTyping = true;
 
-    // 기존 타이핑 효과 함수
+    let finalResult = choice.result; // 기본 결과 지문으로 시작
+
+    // 확률 계산: 체력 감소
+    let healthEventOccurred = false;
+    if (choice.healthChance && Math.random() < choice.healthChance) {
+        playerHealth += choice.healthChange;
+        healthEventOccurred = true;
+        if (choice.healthResult) {
+            finalResult += "\n" + choice.healthResult;
+        }
+        if (choice.healthChange < 0) showInjuryEffect(); // 부상 이펙트
+    } else if (choice.healthChange < 0) {
+        // healthChance가 없지만 체력 감소가 있을 때도 부상 이펙트를 보여줌
+        playerHealth += choice.healthChange;
+        healthEventOccurred = true;
+        if (choice.healthResult) {
+            finalResult += "\n" + choice.healthResult;
+        }
+        showInjuryEffect(); // 부상 이펙트
+    }
+
+    // 확률 계산: 아이템 획득
+    let itemEventOccurred = false;
+    if (choice.itemChance && Math.random() < choice.itemChance) {
+        inventory[choice.addItem] = (inventory[choice.addItem] || 0) + 1;
+        itemEventOccurred = true;
+        if (choice.itemResult) {
+            finalResult += "\n" + choice.itemResult;
+        }
+    }
+
+    // 두 이벤트가 모두 발생하지 않았을 경우 기본 실패 지문 추가
+    if (!healthEventOccurred && !itemEventOccurred && choice.failResult) {
+        finalResult += "\n" + choice.failResult;
+    }
+
+    // 타이핑 효과 함수
     typingInterval = setInterval(() => {
-        if (charIndex < choice.result.length) {
-            storyText.textContent += choice.result[charIndex];
+        if (charIndex < finalResult.length) {
+            storyText.textContent += finalResult[charIndex];
             charIndex++;
         } else {
             clearInterval(typingInterval);
@@ -265,7 +335,7 @@ function makeChoice(choice) {
     storyText.onclick = () => {
         if (isTyping) {
             clearInterval(typingInterval);
-            storyText.textContent = choice.result;
+            storyText.textContent = finalResult;
             isTyping = false;
             displayNextButton();
         }
@@ -281,18 +351,7 @@ function makeChoice(choice) {
         nextButton.classList.add("choice-button");
         nextButton.textContent = "다음으로";
 
-      nextButton.onclick = () => {
-            // 확률 계산: 체력 감소
-            if (choice.healthChance && Math.random() < choice.healthChance) {
-                playerHealth += choice.healthChange;
-                if (choice.healthChange < 0) showInjuryEffect(); // 부상 이펙트
-            }
-
-            // 확률 계산: 아이템 획득
-            if (choice.itemChance && Math.random() < choice.itemChance) {
-                inventory[choice.addItem] = (inventory[choice.addItem] || 0) + 1;
-            }
-
+        nextButton.onclick = () => {
             // 선택한 후 다음 스테이지로 이동
             currentStage = choice.nextIndex;
             checkGameState();
