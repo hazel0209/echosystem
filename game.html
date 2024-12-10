@@ -5,19 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECHOSYSTEM</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            position: relative;
-        }
+        .font-size-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    justify-content: center;
+}
+.font-size-controls button {
+    background-color: #333;
+    color: white;
+    border: 1px solid #444;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+.font-size-controls button:hover {
+    background-color: #555;
+}
+    body {
+    font-family: Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: #fff;
+    margin: 20px; /* 페이지 상하좌우 여백 추가 */
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh; /* 화면 높이를 꽉 채우되 여백을 유지 */
+    box-sizing: border-box; /* 여백과 패딩을 포함한 크기 계산 */
+}
         .game-container {
             max-width: 800px;
             text-align: left;
@@ -26,7 +42,8 @@
         .story-text {
             white-space: pre-line; /* 줄바꿈을 위해 필요 */
             margin-bottom: 20px;
-            font-size: 1.2em;
+            font-size: 1em;
+            line-height: 1.5; /* 줄 간격 설정으로 가독성 유지 */
             min-height: 100px; /* 타이핑 효과 시 화면 깜빡임 방지 */
         }
         .choice-buttons {
@@ -84,6 +101,10 @@
     <div class="game-container">
         <div id="story-text" class="story-text"></div>
         <div id="choices" class="choice-buttons"></div>
+        <div class="font-size-controls">
+        <button onclick="changeFontSize(-1)">-</button>
+        <button onclick="changeFontSize(1)">+</button>
+    </div>
         <div id="status" class="status"></div>
         <div id="inventory" class="inventory">아이템: 없음</div>
         <button id="restart-button" class="restart-button" onclick="resetGame()">다시 시작</button>
@@ -91,10 +112,10 @@
     <div id="overlay" class="overlay"></div>
 
     <script>
-        let playerHealth = 5;
+        let playerHealth = 3;
         let currentStage = 0;
         
-        let typingSpeed = 50; // 타이핑 속도 (밀리초 단위)
+        let typingSpeed = 25; // 타이핑 속도 (밀리초 단위)
         let typingInterval; // 타이핑을 제어하는 변수
         let isTyping = false; // 타이핑 중인지 확인하는 변수
         
@@ -102,9 +123,12 @@
         let completedRandomEvents = new Set();
 
         // 하트 아이콘으로 체력 표시
-        function getHearts() {
-            return '❤️'.repeat(playerHealth);
-        }
+       function getHearts() {
+    const maxHealth = 3; // 최대 체력 값을 설정
+    const fullHearts = '❤️'.repeat(Math.min(playerHealth, maxHealth)); // 현재 체력 만큼 하트 표시
+    const emptyHearts = '♡'.repeat(maxHealth - playerHealth); // 부족한 하트는 빈 하트로 표시
+    return fullHearts + emptyHearts;
+}
 
         // 스토리 데이터
        const story = [
@@ -129,7 +153,7 @@
     {
         text: "[예상치 못한 오류에 빠지셨군요. 하지만 괜찮습니다. 저, 에코는 성심성의껏 당신을 지원하는 것이 의무니까요.]\n[user, 당신의 마지막 기억은 거의 50년 전에 아직 멈춰있는 것 같습니다. 생존에 대한 지식, 근방 구역의 지리까지... 절망적이기 그지없는 상황이네요.]\n[결론부터 말씀드리자면 2030년 즈음, 갑작스럽게도 전국 곳곳에서 대지진과 태풍, 기상 이변과 같은 대규모의 재해가 발생했답니다.]\n[이 사건으로 인해 전국에서 확인된 사상자만 약 37억 명, 전체 인류의 50%를 웃도는 수의 사상자가 발생했죠.]\n[지금 주변에 보이는 뼛조각들과 천에 덮인 물체들이 그 증거랍니다. user의 정신적 안정을 위해 천을 들춰보는 행위는 권장하지 않을게요!]",
         choices: [
-            { text: "그럼 이제 나는 어떻게 해야 해?", nextIndex: 3, result: "[하지만 걱정 마세요. 소수의 인간들은 아직도 공동체를 꾸리고 생존해가며 버티고 있답니다.]\n[몇몇 지방에서는 돌연변이 생물체가 출현했다고도 하지만, 그리 중요하진 않은 정보이니 넘어가죠!]\n[㈜그린미래의 최신작과 함께라면, 약 50년 전의 미래보다 27.08배 열악해진 환경 속에서도 견뎌낼 수 있습니다!]\n[비록 50년 전에 비해 지구의 해수면은 약 1.03m, 평균 기온은 7.3도 이상 상승한 환경이지만 이런 곳에도 여전히 조악하게 모방된 사회 시스템이 존재하니까요.]\n[하지만 기억하세요, 에코는 시스템의 한계로 직접 선택의 강요가 불가능합니다. 에코의 어드바이스를 참고해가면서 생존하고, 후회하지 않을 선택을 골라주시기 바랍니다.]\n\n[이곳에서 만들어가는 이야기는 오로지 당신의 것이니까요.]\n[다시 한 번 환영합니다. 작렬하는 자외선과 가뭄의 땅으로 뒤덮인 이곳은 여러분의 영원한 터전, 지구입니다!]" },
+            { text: "그럼 이제 나는 어떻게 해야 해?", nextIndex: 3, result: "[하지만 걱정 마세요. 소수의 인간들은 아직도 공동체를 꾸리고 생존해가며 버티고 있답니다.]\n[몇몇 지방에서는 돌연변이 생물체가 출현했다고도 하지만, 그리 중요하진 않은 정보이니 넘어가죠!]\n[㈜그린미래의 최신작과 함께라면, 약 50년 전의 미래보다 27.08배 열악해진 환경 속에서도 견뎌낼 수 있습니다!]\n[비록 50년 전에 비해 지구의 해수면은 약 1.03m, 평균 기온은 7.3도 이상 상승한 환경이지만 이런 곳에도 여전히 조악하게 모방된 사회 시스템이 존재하니까요.]\n[하지만 기억하세요, 에코는 시스템의 한계로 직접 선택을 하거나 특정 선택을 강요하는 것이 불가능합니다. 에코의 어드바이스를 참고해가면서 생존하고, 후회하지 않을 선택을 골라주시기 바랍니다.]\n\n[이곳에서 만들어가는 이야기는 오로지 당신의 것이니까요.]\n[다시 한 번 환영합니다. 작렬하는 자외선과 가뭄의 땅으로 뒤덮인 이곳은 여러분의 영원한 터전, 지구입니다!]" },
         ]
     },
     
@@ -162,61 +186,257 @@
         healthChange: -1, 
         healthChance: 1 // 기본값으로 추가
     }
-]
+    ]
+},
     
     // index 5
     {
         text: "[알림: 생명체의 소음을 감지.]\n[아하, 깃털이 다 벗겨진 갈매기가 날고 있었군요! 어느새 바닷가 근처까지 온 모양이에요.]\n[user, 표정을 보아하니 왜 도심이었던 폐허 근처에 바다가 있는지 의아해하는 것 같네요?]\n[시뮬레이션 결과, 확실히 user의 기억 속 50년 전의 이곳은 육지였을 거예요. 해수면이 상승하면서 많은 건물과 육지가 바다에 잠겼거든요! 물 군데군데가 붉은 색을 띠는 것도 생명체의 죽음 때문이 아닌 온도 상승이 이유죠.]\n[그 때문인지는 몰라도, 최근들어 돌연변이 어류들은 많이 나오고 있답니다. 도구가 있으면 식량으로 쓸만한 생물을 손쉽게 잡을 수도 있을 것 같은데...]",
         choices: [
-            { text: "낚시도구를 찾아본다.", nextIndex: 6, result: "[바다 근처에서 도구를 찾는 과정은 그리 어렵지 않았네요! 조금 낡은 낚싯대지만 사용할 수는 있을 것 같아요.]",
-            addItem: "낚싯대"},
+            { text: "낚시도구를 찾아본다.", nextIndex: 6, result: "[바다 근처에서 도구를 찾는 과정은 그리 어렵지 않았네요! 찾느라 밀물이 들어와버린데다 조금 낡은 낚싯대지만 언젠가 사용할 수는 있을 것 같아요.]",
+            addItem: "낚싯대",
+            itemChance: 1
+            },
             { text: "맨손낚시에 도전한다.", nextIndex: 6, baseResult: "[호기롭게 맨몸으로 물 속에 뛰어들면...]",
              healthChange: -1,                // 체력 감소
         healthChance: 0.8,               // 체력 감소 확률: 40%
         healthResult: "\n[생각해보니, 수영을 할 수 있는지의 여부도 생각해본 적이 없었군요, user!]\n[열악한 상황 속에서라면 누구나 실수 한두번 정도는 하는 법이죠. 너무 마음에 담아두진 말아요.]\n[물론 오늘처럼 익사 직전까지 다다르는 상황은 없어야 할 것 같지만요!]", // 체력 감소 시의 결과
         addItem: "고등어",             // 아이템 획득
-        itemChance: 0.2,                 // 아이템 획득 확률: 60%
+        itemChance: 0.2,                 // 아이템 획득 확률: 20%
         itemResult: "[user, 평소 신체를 많이 단련시켰었나요? 생명력이 얼마 남지 않은 머리 둘 달린 고등어도 맨손으로 잡기는 정말이지 어려운 일인데요!]\n[배를 곯을 걱정은 없을 것 같습니다. 그야말로 월척이네요!]", // 아이템 획득 시의 결과
-        action: function() {
-            let healthDecreased = Math.random() < this.healthChance;
-            let itemFound = false;
-            if (!healthDecreased) {
-                // 체력이 감소하지 않으면 아이템을 획득할 수 있음
-                itemFound = Math.random() < this.itemChance;
-            }
-
-            let resultText = this.baseResult;
-            if (healthDecreased) {
-                resultText += " " + this.healthResult;
-            }
-            if (itemFound) {
-                resultText += " " + this.itemResult;
-            }
-
-            return resultText;
         }
-    }
-]}
+    ]
+    },
+
+    // index 6
+    {
+        text: "[알림:영양분 부족]\n[배에서 들려오는 소리를 보아하니 허기가 진 모양이네요!]\n[약 72%의 육지 생명체들이 사라진 지금의 땅에서 인간이 정상적으로 섭취 가능한 완전식품을 찾을 확률은 희박하답니다.]\n[하지만 오늘은 행운이 따라주는 것 같죠? 폐허 속 낡은 옷장 안에 무려 캔참치와 즉석밥이 한 박스 씩이나 있으니까요!]\n[위에 놓여있는 이 종이 조각은 말투를 보아 편지인 것 같네요.]",
+        choices: [
+            { text: "편지를 읽는다", nextIndex: 7, result: "[텍스트 분석을 시작합니다.]\n[...]\n[사랑하는 로아에게. 아빠가 어떻게든 더 버텨보려 했는데, 미안해.]\n[이럴 줄 알았으면 우리 로아 보러 더 자주 가고 더 많이 놀아주는 거였는데.]\n[로아는 찾아주지도 못했지만, 아빠는 이제 이거 필요없으니까 로아가 엄마랑 다 먹어도 괜찮아.]\n[이곳을 먼저 찾아주신 분은 식량을 가져가셔도 좋으니 이쪽 사람들을 발견하실 경우 도움을...(한 여성과 어린아이의 사진 첨부.)]\n[로아야, 여보, 정말 미안했어. 사랑한다.]"
+            }
+        ]
+    },
+           
+ // index 7
+    {
+        text: "[...]\n[텍스트 분석 완료. 옷장 문에서 혈흔을 감지했습니다. 이 사람은 모종의 이유로 손쓸 수 없을 만큼의 큰 부상을 입었던 모양이네요!]\n[어떤 경위로든 소유권은 저희에게 있는 것 같지만요. 어떻게 할까요?]",
+        choices: [
+            { text: "캔참치를 챙긴다", nextIndex: 8, result: "[한 분의 희생 덕에 오늘은 포식이 가능하겠어요.]\n[편지와 사진의 데이터 저장이 완료되었습니다.]\n[결과적으로는 좋은 일이 되었으니, 너무 마음에 담아두진 말아요. user!]",
+            addItems: [
+                { item: "캔참치", quantity: 5 }
+            ]
+            },
+            { text: "즉석밥을 챙긴다", nextIndex: 8, result: "[한 분의 희생 덕에 오늘은 포식이 가능하겠어요.]\n[편지와 사진의 데이터 저장이 완료되었습니다.]\n[결과적으로는 좋은 일이 되었으니, 너무 마음에 담아두진 말아요. user!]",
+            addItems: [
+                { item: "즉석밥", quantity: 5 }
+            ]
+            },
+            { text: "둘 다 챙긴다", nextIndex: 8, result: "[user, 욕심이 조금 컸던 걸까요?]\n[박스를 두 개 챙겨들고 널찍한 폐허를 걸어다니는 건 분명 쉬운 일이 아니죠.]\n[*우당탕* 소리를 내면서 상자도 떨어지고 내용물도 터진 건 조금 아쉽네요!]\n[다음부터는 하나만 편히 챙겨가는 것이 좋겠어요.]",
+             healthChange: -1,                // 체력 감소
+        healthChance: 1,               // 체력 감소 확률: 40%
+            },
+            { text: "챙기지 않는다", nextIndex: 8, result: "[좋은 의미로 남긴 것 같긴 하지만, 한편으로는 어깨가 무겁네요.]\n[저는 어깨가 없지만요!]\n[...]\n[AI―조크였답니다. 너무 염려치 말아요. 지금처럼 뒷맛이 찝찝한 경우가 아니어도 식량은 얼마든지 찾을 수 있을 테니까요!]" },
+        ]
+    },
+           
+    // index 8
+    {
+        text: "“살려주세요, 제발 한 번만 도와주세요... 먹을 게 없어요...”\n[외부 자극을 확인:어느새 대륙의 중부까지 도착했군요, user! 서부를 포함하여 넓게 퍼진 이 황무지는 미처 안전한 곳으로 대피하지 못한 빈민들의 영토라고 할 수 있죠.]\n[물론 그만큼 황폐하고요.]\n[지금 당신의 발목을 붙잡는 노파가 그 증거라고 볼 수 있을 것 같습니다.]\n[상태 스캔: 영양 실조, 시력 손실, 심각한 피부염 감지.]\n[음식을 준다 해도 이 사람은 86%의 확률로 30일 내에 사망할 거예요.]\n“몇 주 째 아무것도 먹지 못했습니다,”\n“부탁입니다, 제발...”\n[하지만 인간은 으레 위기에 직면하면 끈질겨지는 법이죠.]\n[어떻게 할까요?]",
+        choices: [
+            { text: "노파를 걷어찬다", nextIndex: 9, result: "[...]\n[소음 정상화를 확인.]\n[user, 생각보다 과격한 행동방식을 지니셨군요! 우는 소리만 내던 노파가 완전히 나가떨어졌어요.]\n[쓰러진 듯하지만, 생명 유지 반응은 감지되고 있습니다.]\n[보기 좋은 광경은 아니죠? 서둘러 자리를 피하는 편이 좋겠어요. 누군가가 본다면 오해할 수 있으니까요!]"
+            },
+            { text: "노파를 조심스럽게 뿌리친다", nextIndex: 9, result: "“아이고, 아이고, 부탁입니다, 제발...”\n[소리 식별 불가능. 우는 듯한 소리를 내지만, 점차 잦아들고 있네요! 당신에게 원망을 갖지는 않는 것 같아요.]\n[user, 그 표정을 보아하니 마음이 아픈 모양이네요. 적자생존이 만연한 시대니까 너무 침울해하진 말아요! 발걸음을 옮기자고요.]\n[저 분 또한 제 AI를 사용할 수 있다면 좋았겠지만, E.C.H.O는 아무나 사용할 수 있는 제품이 아니니까요.]\n['심신 안정을 돕는 21세기 포근포근 복고음악 모음 playlist'를 재생합니다...]"
+            },
+            { text: "식량을 건네준다", nextIndex: 9, requires: ["캔참치", "즉석밥", "고등어"], result: "[놀라운 선택이군요, user!]\n[당장 눈앞에 있는 노파의 모습만 봐도 얼마나 드문 선택을 한 건지 알겠어요. 눈이 동그래졌는걸요!]\n“저, 정말로, 이걸...?”\n“가, 감사합니다, 감사합니다. 이 은혜, 결코 잊지 않겠습니다...”\n[이 말만 남기고 무어라 할 새도 없이 휙 떠나버린 건 아쉽지만요.]\n[은혜를 갚으러 올까요, 혹은 한 순간의 해프닝으로 끝날까요?]"
+            }
         ]
     },
     
-    // index 6
+    // index 9
     {
-        text: "당신은 무사히 하루를 넘겼습니다.\n앞으로도 많은 도전이 기다리고 있습니다.",
+        text: "[반경 700m 내 오르막길을 감지했습니다.]\n[이는 북부와도 근접한 토지로 넘어가고 있다는 뜻이죠.]\n[목적지를 변경하려면 지금이 기회인 것 같아요, user.]\n[골디락스가 있는 북부로 갈까요, 혹은 황무지 근처를 조금 더 돌아볼까요?]",
         choices: [
-            { text: "게임 종료", nextIndex: null, result: "수고하셨습니다! 게임이 종료되었습니다." }
+            { text: "역시 북부로 향한다", nextIndex: 17, result: "[user의 의사를 확인했습니다.]\n[목적지에 따른 최적의 경로를 재설정합니다...]"
+            },
+            { text: "역시 중서부에서 머무른다", nextIndex: 10, result: "[user의 의사를 확인했습니다.]\n[목적지에 따른 최적의 경로를 재설정합니다...]",
+            }
         ]
-    }
+    },
+           
+    // index 10, 황무지 1
+    {
+        text: "[몇 걸음 전까지만 해도 약간씩은 널려있던 생존자들이 차츰 보이지 않네요.]\n[바다가 보이지 않는 마른 땅, 드넓은 평야에 폐허만이 남은 이 곳에서라면...]\n[예상 가능한 경우는 두 가지입니다. 위험 요소가 있어 근방 인원이 전멸했거나, 안전하게 모일 수 있는 장소가 있다는 뜻이죠!]\n[목적지를 잘 찾아온 것 같네요.]",
+        choices: [
+            { text: "생존자들은 모두 어디에 있어?", nextIndex: 11, result: "[분석 중...]\n[지상 근방 300m 이내 생명체 중 '인간'은 감지되지 않았어요.]\n[열악한 환경을 피할 수 있는 어디론가 모여서 은둔하고 있을 가능성이 높아보이네요.]\n[조금 더 탐색해보자고요, 우리!]"
+            }
+        ]
+    },
+
+ // index 11, 황무지 2
+    {
+        text: "[깡, 금속음의 소음을 감지했습니다.]\n[무언가를 밟았나요, user?]\n[아하, 이제 보니 모래 바닥 밑에 지하 벙커 문이 있었군요!]\n[금속의 두께는 추정 30cm 이상. 소리를 엿듣는 건 어려울 것 같아요. 잠겨있을 확률도 높아서 비집고 들어가기에도 무리가 있고요.]\n[어떻게 할까요?]",
+        choices: [
+            { text: "입구에 노크를 한다", nextIndex: 12, result: "[저길 보세요, user! 예의바른 소리에 반응한 것 같아요, 문이 덜걱거리는 소리가 들려오는걸요.]\n[놀랍게도 금세 문을 열어주는군요!]\n[그마저도 얼굴만 보일 정도긴 하지만요. 눈앞에 있는 이 고글을 쓴 사람은 약 20대의 여성으로 추정됩니다. 정찰병 역할을 하는 걸까요?]\n\n“누구세요? ...또다른 생존자예요?”\n“미안한데, 저희도 슬슬 자리가 차서 다른 사람 받아줄 여유가...”\n“로아야! 괜찮다고 했지. 그냥 들여보내.”\n“하...”\n\n[밑에서 또다른 목소리가 들렸는데, 우연일까요? 나이가 꽤 있는 남성으로 추정됩니다.]\n[해치를 열어둔 걸 보니 들어오라는 표시인 것 같아요. 저희도 들어가죠!]"
+            },
+            { text: "안에 누구 없어요?", nextIndex: 12, result: "[저길 보세요, user! 예의바른 소리에 반응한 것 같아요, 문이 덜걱거리는 소리가 들려오는걸요.]\n[놀랍게도 금세 문을 열어주는군요!]\n[그마저도 얼굴만 보일 정도긴 하지만요. 눈앞에 있는 이 고글을 쓴 사람은 약 20대의 여성으로 추정됩니다. 정찰병 역할을 하는 걸까요?]\n\n“누구세요? ...또다른 생존자예요?”\n“미안한데, 저희도 슬슬 자리가 차서 다른 사람 받아줄 여유가...”\n“로아야! 괜찮다고 했지. 그냥 들여보내.”\n“하...”\n\n[밑에서 또다른 목소리가 들렸는데, 우연일까요? 나이가 꽤 있는 남성으로 추정됩니다.]\n[해치를 열어둔 걸 보니 들어오라는 표시인 것 같아요. 저희도 들어가죠!]"
+            },
+            { text: "억지로 문을 연다", nextIndex: 13, result: "[user, 해당 방식은 권장하지 않...]\n[*탕!*]\n[이런, 고개를 조금만 더 숙였다면 큰일날 뻔했네요! 굳게 잠긴 문에는 보통 보안 장치가 있기 마련이랍니다. 지금 저희를 쏘려고 했던 이 보호색을 띤 총기처럼요.]\n[아래에 있는 생존자들도 놀란 것인지, 동요하는 젊은 여성의 목소리가 들려오네요! 곧 문이 열릴 것 같아요!]\n\n“거기 누구야!? 보안 경고 울린 거 다 들었어!”\n“뭐야, 당신! 여기서 먹을 거 털어가려고 해도 우리도 물자 없거든, 꺼져!”"
+            }
+        ]
+    },
+
+ // index 12, 황무지 3
+    {
+        text: "[지하 방공호로 설계된 곳이라지만 꽤 깊숙한 곳에, 그것도 꽤 크게 설치되어 있는 것 같아요. 내려오는 데만 시간이 6분 가량 소요됐네요!]\n[군용 벙커를 개조했을 확률이 높습니다. 기존의 법률에 의하면 불법이겠지만, 지금은 누구도 신경쓰지 않겠죠.]\n[위에 비하면 공기의 질은 근소하게나마 괜찮지만, 어째 이쪽도 덥지 않나요?]\n[알림: 인물 접근 중. 저쪽을 봐요, user. 아까 본 고글을 쓴 젊은 여성과 노인이 걸어오고 있어요.]\n[행색을 보아하니 이곳도 그다지 풍족하진 않아보이네요. 노인과 여성 뒤로 많은 생존자들이 기웃거리고 있지만, 다들 다쳐있고 굶어있어요.]\n\n“당신도 저 바깥에서 살아남은 사람들 중 하나군요. 무사히 여기까지 오셔서 다행입니다.”\n“저는 근처에서 책방을 하던 노인네입니다. 어쩌자보니 우연히 사람들을 관리하는 역할을 맡았을 뿐이라... 아, 이 애는 로아라고 불러주시면 되고요.”\n“자외선이 더 심해지고 일교차도 커져서 살아남기 쉬운 환경이 아니었을텐데...”\n“잠깐 동안은 휴식 공간과 먹을 걸 제공해드릴테니, 쉬고 가셔도 괜찮습니다. 사정 상 오래 머무시기는 어려울 것 같아 죄송하네요, 허허.”",
+        choices: [
+            { text: "잠시 신세 좀 지겠습니다...", nextIndex: 15, result: "“아닙니다, 아닙니다. 로아야, 남는 손님방으로 안내해드려라.”\n“알겠어요.”\n\n[환경 분석중... 분석 완료.]\n[user, 이곳은 정말 구실만 갖춘 공간으로 보여요. 생각보다 많은 이들이 수용되어 있지만, 부상 인원을 보면 인력도 부족하고 식량도 많진 않네요. 이 사람들은 어쩌다 이런 공간을 찾게 된 걸까요?]\n\n“뭘 그렇게 두리번거려? 이래보여도 사람 사는 곳이라고.”\n“아까는... 뭐, 미안했어. 여기도 강도들이 많이 찾아가려 해서 우리도 날카로워졌거든.”"
+            },
+            { text: "사정이라는 건?", nextIndex: 14, result: "“아, 하하, 별 건 아닙니다. 그냥...”\n“...돼지들.”\n“로아야, 그런 말 쓰면 안 된다고 했잖냐! 아이고, 미안합니다. 이 아이가 다 사정이 있어서 그러니...”\n“당신, 소식 듣는 게 꽤 늦나봐. 어디서 있다 온 건진 모르겠지만, 단도직입적으로 말할게.”\n“여긴 이제 안전하지가 않아. 북쪽 알배기 땅에 사는 돼지들이 지들 거로 모자라서 우리 땅까지 먹겠다고 난리거든.”\n“하이고, 그걸 그렇게 말하면...”\n“왜요? 틀린 말도 아닌데.”\n\n“...난처하게 됐지만, 저 아이 말이 사실입니다. 실은 그래서 이 벙커에 모인 이들마저도 다시 와해될 위기에 처했거든요.”"
+            }
+        ]
+    },
+           
+ // index 13
+    {
+        text: "[아무래도 잘못된 방식의 인사로 인해 많은 경계심을 얻은 모양이에요.]\n[눈앞의 이 인물은 매우 화가 난 것처럼 보이는데, 저희는 아무 해를 끼칠 생각 없다고 설득해보는 편이 좋겠는걸요!]",
+        choices: [
+            { text: "말로 설득한다", nextIndex: 17, baseResult: "[당신이 급하게 설득하듯 입을 열면...]",
+             healthChange: -1,                // 체력 감소
+        healthChance: 0.5,               // 체력 감소 확률: 40%
+        healthResult: "[긴장한 상황에서는 혀가 두어번 꼬일 수도 있죠, user.]\n[횡설수설하는 모습이 제법 위험해보인다고 판단한 것 같습니다. 연막탄을 직격으로 맞았군요!]\n[성분 분석 결과 인체에는 무해한 연막같지만, 그래도 폭탄을 맞았다면 몸으로 받은 충격이 꽤 클 거예요.]\n[황무지의 생존자들은 우호적이지 않은 듯하니, 북부로 걸음을 옮기는 것이 좋겠네요!]", // 체력 감소 시의 결과
+        failResult: "[역시 말로 하는 대화는 제일 평화로운 방법이지요!]/n[당신이 정중하게 미안하다는 의지를 표현할수록, 저 사람의 표정이 점차 누그러지고 있어요.]\n[오해인 건 알았으니까 얼른 가라는 듯 손을 휘젓네요.]\n[마음이 변심하기 전에 자리를 뜨는 편이 좋겠어요.]"
+            },
+            { text: "식량을 나눠준다", nextIndex: 12, requires: ["캔참치", "즉석밥", "고등어"], result: "“...주, 준다고? 이걸? 갑자기?”\n\n[효과가 있는 것 같네요, user! 조금 전까지만 해도 경계 가득한 표정이 당황으로 바뀌었어요.]\n[쉽게 거절하지 못하는 것을 보니 영양분이 부족한 상태이거나, 벙커 안 생존자들에게 주어진 식량이 많지 않을 확률이 높겠네요.]\n\n“...하, 어쩔 수 없지.”\n“어차피 안 그래도 할아버지가 그쪽 모셔오라고 했어. 쉴 곳 찾는 거면 따라와.”\n\n[여성은 해치를 열어둔 채로 다시 밑으로 들어간 것 같아요. 우리도 조심스럽게 들어가면 될 것 같죠?]"
+            },
+            { text: "급하게 도망친다", nextIndex: 17, result: "[싸움이 일어날 상황은 피하는 게 상책이죠.]\n[신뢰를 완전히 잃은 것 같으니, 한동안 황무지의 생존자들에게 다시 찾아가는 건 어렵겠어요.]\n[우선은 북부로 걸음을 옮겨봐요, 우리!]"
+            }
+        ]
+    },
+        
+// index 14
+    {
+        text: "“할아버지도 말 맞췄으니 된 거네. 솔직히 말해서 이 방공호가 좋은 곳이라고는 못해. 햇빛 겨우 피할 수 있는 곳이니까 다들 와있는 거지.”\n“그럼에도 불구하고 우리 벙커가 필요하다면 줄게. 원한다면 아주 조금이지만 식량도.”\n“조건은 하나야. 골디락스였나, 골댕이랬나... 아무튼, 거기에서 사는 돼지들이 여기 쳐들어오는 것 좀 막아줘.”\n“어차피 우리는 찾아가도 거지들 소리밖에 못 들어. 마음같아선 다 밀어버리고 싶지만, 지금 여기는 부상자 소굴인데 그만한 힘이 있는 것도 아니고...”\n“그놈들 쫓아내주건, 말로 구슬리건, 어떻게 해도 괜찮아. 부탁만 제대로 들어주면 여기서라도 호의호식 정도는 누리게 해줄게.”\n“나쁜 제안은 아니라고 생각하는데, 어때?”\n\n[흥미로운 제안이네요.]\n[만약 이 제안을 받아들인다면 어느 정도의 위험부담은 있겠지만, 성공한다면 정식으로 벙커의 일원으로 받아들여질 확률이 높아요.]\n[사실은 그것보다도 이미 타격을 덜 입은 땅 골디락스의 사람들이 굳이 황무지까지 와서 물자를 찾고 있다는 건 좀 의아하기도 하고요!]/n[어떻게 하시겠어요, user?]",
+        choices: [
+            { text: "제안을 받아들인다", nextIndex: 16, Result: "“지, 진짜지! 뒤늦게 무르기 없기다?”\n\n['로아'로 추측되는 여성의 낯빛이 눈에 띄게 밝아졌네요! 아무래도 이 사람은 벙커 안의 사람들을 많이 아끼고 있는 모양이에요.]\n[짧은 설명이 이어지네요. 탄탄한 몸과 고글을 봤을 때부터 예상했지만, 역시 이 방공호의 엔지니어인 모양이에요. 꽤 오랜 시간 동안 이 넓은 벙커 안의 파이프와 보안 체계를 관리해왔다고 하니, 행동거지가 얼마나 강인한지는 와닿는 것 같아요!]\n\n“...내가 말은 그렇게 했어도 역시 부잣집들한테 맞서는 건 쉽지 않다는 거 잘 알고 있으니까.”\n“받아들여줘서 고마워. 진심이야. 할아버지도 속으로는 엄청 기뻐하고 계실걸. ...그 녀석들 만나러 갈 때 이거 챙겨가. 방공호 애들이 줬다고 그러면 알아서 문은 열 거야.”",
+              addItem: "황금 열쇠",
+             itemChance: 1
+            },
+            { text: "제안을 거절한다", nextIndex: 15, result: "“...”\n“그래, 뭐, 쉬운 일은 아니니까.”\n\n['로아'로 추측되는 여성이 시선을 떨구며 머리를 긁적이네요. 그래도 역시 기대하긴 했던 모양이에요.]\n[하지만 user의 행동이 어리석다고는 하기 어렵죠! 저희는 저희 생존만으로도 갈 길이 먼 걸요.]\n\n“허허, 이 아이가 저희를 워낙 아끼고 있어서 그럽니다. 이야기를 들어주신 것만으로도 저희는 고마운 걸요.”\n“건기가 끝나면 일교차가 더욱 커질 겁니다. 모쪼록 따뜻하게 채비를 마치시지요.”"
+            }
+        ]
+    },
+    
+// index 15
+    {
+        text: "“뭐, 그럼 적어도 여기 있는 동안은 푹 쉬다 가.”\n“할아버지가 당신을 챙겨주라고 하기도 했으니까.”\n“그 정도면 됐지? 여기가 당신 방이야. 쉬고 있어.”\n\n[그리 넓지는 않지만, 뙤약볕과 일교차를 피할 수 있는 방은 요즘 찾기 드물죠! 이불까지 있으니, 오랜만에 편안한 숙면이 가능하겠어요.]\n[오래 머물진 않겠지만, 있는 동안이라도 푹 쉬어두는 편이 좋겠죠?]\n[알림: user mod에 따라 슬립 모드에 돌입합니다.]\n[푹 쉬어요, user!]",
+        choices: [
+            { text: "좀 쉬어볼까...", nextIndex: 17, Result: "[...]\n[*기상 알림* *기상 알림*]\n[매우 좋은 휴식 시간을 보낸 것 같네요, user!]\n[목숨 걱정 안 하고 잠들 수 있는 환경이 오랜만이어서 그럴 거예요.]\n\n“이제야 일어났어?”\n“나이도 나랑 얼마 차이 없어보이는 사람이 늦잠은 왜 이렇게 자?”\n“아무튼, 우리는 슬슬 벙커 정비하러 갈 거야. 당신도 슬슬 나갈 채비 해둬.”",
+              healthChange: +1,               healthChance: 1
+            }
+        ]
+    },
+
+// index 16
+    {
+        text: "“뭐, 그렇게 됐으니 적어도 여기 있는 동안은 푹 쉬다 가.”\n“할아버지가 당신을 챙겨주라고 엄청나게 신신당부하기도 했으니까.”\n“여기가 당신 방이야. 특별히 그나마 좀 넓은 곳으로 골라준 거니까 불만갖지 말고. 쉬고 있어.”\n\n[그리 넓지는 않지만, 뙤약볕과 일교차를 피할 수 있는 방은 요즘 찾기 드물죠! 이불까지 있으니, 오랜만에 편안한 숙면이 가능하겠어요.]\n[앞으로도 할 일이 많으니, 이곳에 있는 동안이라도 푹 쉬어두는 편이 좋겠죠?]\n[알림: user mod에 따라 슬립 모드에 돌입합니다.]\n[푹 쉬어요, user!]",
+        choices: [
+            { text: "좀 쉬어볼까...", nextIndex: 17, Result: "[...]\n[*기상 알림* *기상 알림*]\n[매우 좋은 휴식 시간을 보낸 것 같네요, user!]\n[목숨 걱정 안 하고 잠들 수 있는 환경이 오랜만이어서 그럴 거예요.]\n\n“이제야 일어났어?”\n“나이도 나랑 얼마 차이 없어보이는 사람이 늦잠은 왜 이렇게 자?”\n“아무튼, 우리는 슬슬 벙커 정비하러 갈 거야. 당신도 슬슬 나갈 채비 해둬.”\n“...아, 이건 선물. 부탁 들어줬으니까.”",
+              healthChange: +1,               healthChance: 1,
+              addItem: "에너지바",
+             itemChance: 1
+            }
+        ]
+    },
+
+    // index 17
+    {
+        text: "[골디락스로 향하는 길은 다소 멀긴 하지만, 생존자들이 지내는 곳을 알아보기까지는 오랜 시간이 걸리지 않는다는 사실! 알고 계셨나요?]\n[이유는 간단하답니다. 골디락스는 재해에 의한 타격이 적었다는 걸 알자마자 커다란 장벽을 세워서 외부인들의 출입을 엄격하게 제한했거든요.]\n[그 덕에 내부에 있는 사람들은 바깥의 위험성에 노출될 확률이 매우 적다는 게 특징이죠.]\n[그로 인해 많은 사람들한테는 '더러운 부르주아 계층'이라고 불리기도 한답니다.]\n[다만 그 내면이 정말로 어떤 모습을 하고 있을지는 모르는 일이니까요!]",
+        choices: [
+            { text: "어째 찜찜한데...", nextIndex: 18, result: "[후후, 설마요!]\n[고전문학과 역사적 사실에 따르면 부유한 사람들은 늘 빈곤한 이들을 착취했다고 하지만,]\n[지금은 돈보다 음식, 음식보다 목숨이 귀중한 시대이니까요.]\n[부자들의 민낯이 궁금하다는 듯한 표정을 짓고 있네요, user!]\n[발걸음을 서두르는 편이 좋겠어요. 최적 경로를 재탐색합니다...]"
+            }
+        ]
+    },
+           
+  // index 18
+    {
+        text: "[알림: 전방에서 인간을 감지했습니다.]\n[고속 식별 실패. 분석 중...]\n[수상할 정도로 허름하고 지친 기색의 사람이 보이네요. 노트북을 아주 소중하게 끌어안고 있어요.]\n[분석 중... 음성 식별 실패. 후드티를 뒤집어쓴 채로 쉴새없이 무언가를 중얼거리고 있네요.]\n[...어째 북부 쪽 사람인 점을 감안해도 심히 말끔한 모습이지 않나요?]\n[식별이 불가능합니다.]",
+        choices: [
+            { text: "죄송한데, 누구...?", nextIndex: 19, Result: "“...”\n“졸...업...”\n“졸작...이놈의 졸작...벌써 일주일...일주일밖에...안 남았다고...”"
+            }
+        ]
+    },
+
+// index 19
+    {
+        text: "“하기 싫어...졸업하기 싫어...하기 싫어...으으으...”",
+        choices: [
+            { text: "그래도 졸업은 하셔야죠", nextIndex: 20, Result: "“...”\n“으...으아아아아아악!!!!!!!!!!!”\n[이런! user, 괜찮나요?]\n[저 분은 괴성을 지르다가 어디론가 뛰어가버렸어요. 저조차도 시야로 쫓아가지 못했네요.]\n[대체 뭐였을까요? 아마도 별 건 아니었겠죠.]\n[특히 저희랑 관련된 건 아닐 거예요. 자, 어서 가죠! 절대로 무언가가 찔려서 이렇게 말씀드리는 건 아니에요!]"
+            },
+            { text: "하기 싫으면 잠깐은 쉬셔도...", nextIndex: 20, Result: "“흐...”\n“흐헤헤...헤...헤헥...”\n“그렇죠? 그쪽이 생각해도 그렇죠? 으하하, 학,”\n“...하하하!!!!!!!!!”\n[...]\n[그 말만을 남기고 떠나버렸네요.]\n[노트북은 허공에 던져놓고요.]\n[기기는 박살나긴 했지만, 쓸모있는 부품은 몇 개 챙길 수 있을 것 같습니다.]\n[졸업 작품이 그렇게 힘든 일이었던가요? 인간의 감정은 이해하기 복잡하네요.]\n[...]\n[그런데, 지금의 대륙에서 정상적으로 기능하는 대학이 남아있던가요?]",
+              addItem: "전자 부품",
+             itemChance: 1
+            }
+        ]
+    },
+
+// index 20
+    {
+        text: "[지평선 너머로 보이는 커다란 벽, 그리고 그 너머로 아주 희미하게 보이는 녹빛.]\n[틀림없어요! 저곳이 바로 골디락스랍니다. 근방 대륙에서는 눈 씻고 봐도 찾아볼 수 없는 식물을 담은 온실, 그리고 최신형 공기 청정기가 가동되는 세미―유토피아라고도 불리죠!]\n[당연하게도 장벽의 앞에는 보초로 보이는 인물이 둘 서있는 것 같습니다.]\n[둘 다 총으로 보이는 무기를 들고 있네요. 골디락스는 기본적으로 외부인을 매우 적대한다고 알려져 있으니, 조심스러운 태도를 가져야 할 것 같아요.]\n[어떻게 다가갈까요?]",
+        choices: [
+            { text: "정중하게 들어가고 싶다 말한다", nextIndex: 22, Result: "“뭐야, 넌?”\n“행색을 보니까 딱 봐도 저쪽 거렁뱅이들 동네에서 온 것 같은데.”\n“이봐, 길 잘못 들었으면 저쪽으로 돌아서 쭉 가. 눈치가 있으면.”\n[이런, 둘 다 그다지 당신을 반기는 분위기는 아닌 것 같네요.]\n[아무리 불쌍한 표정을 지어보여도 저들은 이미 비슷한 광경을 숱하게 봐온 듯, 꿈쩍하지도 않습니다.]\n[정말 들어갈 수 있는 방법이 아예 없는 걸까요?]"
+            },
+            { text: "부자인 척 건들거린다", nextIndex: null, Result: "“이런, 씨, 뭐야, 이거?”\n“이제 경비원 신세랍시고 거지들까지 지금 우리를 놀려!?”\n“이거 또라이 아냐!”\n“야! 저거 잡아! 쏴!”\n\n[열심히 도망치셨나요, user?]\n[저들이 감정에 휩쓸려서 아무 데나 총을 난사해서 다행이지, 제대로 노렸다면 한방에 머리가 날아갔을지도 몰라요!]\n[에코의 리빙포인트: 무기를 들고 있는 사람의 앞에서 당돌한 모습을 보이는 것은 자제하는 편이 좋답니다!]",
+           healthChange: -3,
+             healthChance: 1
+            },
+            {   text: "열쇠를 보여준다",
+                nextIndex: 21,
+                requires: ["황금 열쇠"],
+                result: "“이 자식, 말 더럽게 안 듣네. 이거 딱 봐도 도금 피규어잖아? 뇌물도 뇌물같은 걸 들고 와야지, 무슨...”/n“아니, 이거 어디서 본 적 있는 것 같기도 하고...? 어이, 너. 이게 뭔데?”"
+            }
+        ]
+    },
+
+// index 21
+    {
+        text: "“열쇠? 뭔데, 이게? 애들 갖고 노는 키링 아니야?”\n“잠깐! 야, 나 저거 알아. 그 때 거렁뱅이들 중 몇 명이 훔쳐갔다던 대표님 냉장고 키잖아!”\n“와, 이 자식, 자수라도 하러 왔나본데? 와중에 표정은 왜 이렇게 벙쪄있대냐.”\n“대표님이 이거 아시면 엄청 좋아하시겠구만.”\n“오냐, 그렇게 오고 싶다면야 들여보내주지. 각오해라? 해명 제대로 안 하면 우리 개들 밥으로 줘버린다?”",
+        choices: [
+            { text: "잠깐, 뭔가 오해가...!", nextIndex: null, Result: "[이게 다 무슨 소리죠?]\n[훔쳐간 열쇠라니요? 너무 순순히 주길래 분명 방공호 쪽과 골디락스 간 거래가 있던 것인 줄 알았는데, 방공호 쪽도 차마 떳떳하게 나오진 못하고 저희를 속인 모양이네요!]\n[하지만 이미 양 팔이 붙잡힌 이상 어쩔 수 없죠. 골디락스 안에는 들어갈 수 있게 되었으니 불행 중 다행이라고 해야 할까요?]\n[보초들이 손바닥을 대자, 굳건하던 장벽의 문이 둔탁한 소리를 내며 열리기 시작합니다.]\n\n[그 뒤로 보이는 것은...]\n\n\n\n*플레이해주셔서 감사합니다. '에코시스템'의 뒷이야기는 확장판에서 이어집니다!"
+            }
+        ]
+    },
+           
+// index 22
+    {
+        text: "“아오, 끈질기게! 그러니까 말했잖아, 여기는 너 같은 놈들까지 받아줄 정도로 아무나 드나드는 곳이 아니라고!”\n“귀한 땅이야, 임마. 우리가 그렇게 찾아오는 사람 아무나 다 받아주는 줄 알아?”\n“그렇게까지 들어올 곳 찾고 싶으면 저기 황무지 쪽으로나 가지 그래?”\n“딱 너처럼 허약해빠진 놈들이 어딘가에는 모여 살고 있겠지.”\n“뒤져도 우리는 알 바 없지만.”",
+        choices: [
+            { text: "황무지 쪽으로 돌아간다", nextIndex: 10, Result: "[몇 번을 말해도 그들의 시선 하나, 장벽 한 짝 조차 미동을 하지 않네요.]\n[당장 골디락스를 뚫고 들어갈 수 있는 가능성은 거의 0%에 수렴하므로, 황무지 부근을 돌아보는 것이 나을 것이라고 판단돼요.]\n[혹시 몰라요! 어쩌면 황무지 쪽에서 골디락스와 교류할 수 있는 실마리를 갖고 있을지.]\n[당장 저들의 예의바르지 않은 태도에 순응해야 하는 건 안타깝지만, 어디까지나 생존을 위한 사회성이라고 긍정적으로 생각합시다!]"
+            }
+        ]
+    },
 ];
 
 
         // 부상 이펙트
-      function showInjuryEffect() {
+ function showInjuryEffect() {
+    console.log("부상 이펙트 함수 실행"); // 디버깅 메시지
     const overlay = document.getElementById('overlay');
-    overlay.style.opacity = '1';
-    setTimeout(() => overlay.style.opacity = '0', 500); // 깜빡임 지속 시간 조정
+    if (!overlay) {
+        console.error("부상 효과를 위한 overlay 요소를 찾을 수 없습니다."); // 에러 메시지
+        return;
+    }
+    overlay.style.opacity = '1'; // 붉은 화면 효과 시작
+    setTimeout(() => {
+        overlay.style.opacity = '0'; // 일정 시간 후 효과 해제
+    }, 500); // 500ms 지속 시간
 }
 
+        function changeFontSize(delta) {
+    const storyText = document.getElementById("story-text");
+    const currentSize = parseFloat(window.getComputedStyle(storyText).fontSize);
+    const newSize = Math.max(10, currentSize + delta); // 최소 폰트 크기 10px
+    storyText.style.fontSize = `${newSize}px`;
+}
         // 게임 상태 표시 (타이핑 효과 포함)
 function displayStory() {
     const storyText = document.getElementById("story-text");
@@ -230,10 +450,11 @@ function displayStory() {
     storyText.textContent = ''; // 기존 텍스트 초기화
     choicesDiv.innerHTML = ''; // 기존 버튼 초기화
 
-    const currentText = story[currentStage].text || ""; // 텍스트 가져오기
+    const currentText = story[currentStage].text || ""; // 현재 스토리 텍스트 가져오기
     let charIndex = 0;
     isTyping = true;
 
+    // 타이핑 효과
     typingInterval = setInterval(() => {
         if (charIndex < currentText.length) {
             storyText.textContent += currentText[charIndex];
@@ -241,18 +462,23 @@ function displayStory() {
         } else {
             clearInterval(typingInterval);
             isTyping = false;
-            displayChoices();
+
+            // 선택지가 있는 경우: 선택지 표시
+            if (story[currentStage].choices && story[currentStage].choices.length > 0) {
+                displayChoices();
+            } else {
+                // 선택지가 없는 경우: [다음으로] 버튼 추가
+                const nextButton = document.createElement("button");
+                nextButton.textContent = "다음으로";
+                nextButton.classList.add("choice-button");
+                nextButton.onclick = () => {
+                    currentStage = story[currentStage].nextIndex; // 다음 단계로 이동
+                    displayStory();
+                };
+                choicesDiv.appendChild(nextButton);
+            }
         }
     }, typingSpeed);
-
-    storyText.onclick = () => {
-        if (isTyping) {
-            clearInterval(typingInterval);
-            storyText.textContent = currentText;
-            isTyping = false;
-            displayChoices();
-        }
-    };
 
     statusDiv.textContent = `체력: ${getHearts()}`;
     inventoryDiv.textContent = `아이템: ${getInventoryText()}`;
@@ -261,23 +487,53 @@ function displayStory() {
         // 선택지 표시 함수
 function displayChoices() {
     const choicesDiv = document.getElementById("choices");
-    story[currentStage].choices.forEach(choice => {
-        const button = document.createElement("button");
-        button.classList.add("choice-button");
-        button.textContent = choice.text;
+    choicesDiv.innerHTML = ""; // 기존 선택지 초기화
 
-        if (choice.requires && !inventory[choice.requires]) {
-            button.disabled = true;
-            button.textContent += ` (필요: ${choice.requires})`;
-        }
+// 닫는 중괄호 추가
+story[currentStage].choices.forEach(choice => {
+    const button = document.createElement("button");
+    button.classList.add("choice-button");
+    button.textContent = choice.text;
+    
+      button.onclick = () => {
+            makeChoice(choice);
+        };
 
-        button.onclick = () => makeChoice(choice);
         choicesDiv.appendChild(button);
-    });
+
+    let availableItem = null;
+    if (choice.requires) {
+        availableItem = choice.requires.find(item => inventory[item] && inventory[item] > 0);
+    }
+
+    if (choice.requires && !availableItem) {
+    button.disabled = true;
+    button.style.opacity = 0.5; // 버튼 어둡게 처리
+    button.onclick = () => alert("필요한 아이템이 없습니다!");
+} else {
+    button.onclick = () => {
+        if (choice.requires && availableItem) {
+            inventory[availableItem]--;
+            if (inventory[availableItem] <= 0) delete inventory[availableItem];
+            updateInventoryUI();
+        }
+        makeChoice(choice); // 선택지 클릭 시 인덱스 업데이트
+    };
 }
+
+// 버튼을 항상 갱신
+choicesDiv.appendChild(button);
+
+});
+}
+       
 // 하트 아이콘으로 체력 표시
 function getHearts() {
     return '❤️'.repeat(playerHealth);
+}
+
+function updateInventoryUI() {
+    document.getElementById("inventory").textContent = `아이템: ${getInventoryText()}`;
 }
 
 // 선택지 처리 함수
@@ -285,46 +541,27 @@ function makeChoice(choice) {
     const storyText = document.getElementById("story-text");
     const choicesDiv = document.getElementById("choices");
 
-    storyText.textContent = ''; // 기존 텍스트 초기화
+    // 기존 텍스트 초기화
+    storyText.textContent = '';
+    choicesDiv.innerHTML = '';
+
+    // 기본 결과 텍스트
+    let resultText = choice.baseResult || choice.result || "";
+
+    // nextIndex가 유효한지 확인
+    if (choice.nextIndex !== null && choice.nextIndex !== undefined) {
+        currentStage = choice.nextIndex; // currentStage를 업데이트
+    } else {
+        // nextIndex가 없을 경우 게임 종료 처리
+        document.getElementById("restart-button").style.display = 'inline-block';
+        return;
+    }
+
+    // 타이핑 효과를 위한 초기화
     let charIndex = 0;
     isTyping = true;
 
-    // 선택지 속성에 기본값 설정
-    const healthChance = choice.healthChance || 0;  // 기본값 0
-    const healthChange = choice.healthChange || 0;  // 기본값 0
-    const itemChance = choice.itemChance || 0;      // 기본값 0
-    const addItem = choice.addItem || null;         // 기본값 null
-
-    // 결과 지문 생성
-    let finalResult = choice.result || choice.baseResult || ""; 
-
-    // 체력 감소 확률 이벤트
-    let healthEventOccurred = false;
-    if (Math.random() < healthChance) {
-        playerHealth += healthChange;
-        healthEventOccurred = true;
-        if (choice.healthResult) {
-            finalResult += "\n" + choice.healthResult;
-        }
-        if (healthChange < 0) showInjuryEffect(); // 체력 감소 효과
-    }
-
-    // 아이템 획득 확률 이벤트
-    let itemEventOccurred = false;
-    if (!healthEventOccurred && Math.random() < itemChance && addItem) {
-        inventory[addItem] = (inventory[addItem] || 0) + 1;
-        itemEventOccurred = true;
-        if (choice.itemResult) {
-            finalResult += "\n" + choice.itemResult;
-        }
-    }
-
-    // 실패 시 기본 결과 추가
-    if (!healthEventOccurred && !itemEventOccurred && choice.failResult) {
-        finalResult += "\n" + choice.failResult;
-    }
-
-    // 타이핑 효과 출력
+        // 타이핑 효과
     typingInterval = setInterval(() => {
         if (charIndex < finalResult.length) {
             storyText.textContent += finalResult[charIndex];
@@ -332,44 +569,95 @@ function makeChoice(choice) {
         } else {
             clearInterval(typingInterval);
             isTyping = false;
-            displayNextButton();  // 다음 버튼 표시
+
+            // 다음 단계로 이동할 [다음으로] 버튼 표시
+            if (choice.nextIndex !== null && choice.nextIndex !== undefined) {
+                const nextButton = document.createElement("button");
+                nextButton.textContent = "다음으로";
+                nextButton.classList.add("choice-button");
+                nextButton.onclick = () => {
+                    currentStage = choice.nextIndex;
+                    displayStory();
+                };
+                choicesDiv.appendChild(nextButton);
+            } else {
+                // 게임 종료 처리
+                document.getElementById("restart-button").style.display = 'inline-block';
+            }
         }
     }, typingSpeed);
 
-    // 클릭으로 타이핑 완료
-    storyText.onclick = () => {
-        if (isTyping) {
+    // 아이템 추가 및 소비 처리
+    if (choice.addItems) {
+        choice.addItems.forEach(({ item, quantity }) => {
+            inventory[item] = (inventory[item] || 0) + quantity;
+        });
+        updateInventoryUI(); // 아이템 추가 후 업데이트
+    }
+
+    if (choice.consumeItems) {
+        choice.consumeItems.forEach(({ item, quantity }) => {
+            if (inventory[item]) {
+                inventory[item] -= quantity;
+                if (inventory[item] <= 0) delete inventory[item];
+            }
+        });
+        updateInventoryUI(); // 아이템 소모 후 업데이트
+    }
+
+        // 확률 및 결과 처리
+    const healthChance = choice.healthChance || 0; // 체력 변화 확률
+    const healthChange = choice.healthChange || 0; // 체력 변화 값
+    const itemChance = choice.itemChance || 0; // 아이템 획득 확률
+    const addItem = choice.addItem || null; // 획득할 아이템
+    const failResult = choice.failResult || ""; // 실패 시 결과
+    const healthResult = choice.healthResult || ""; // 체력 변화 시 결과
+
+    // 확률 계산 로직
+    if (Math.random() < healthChance) {
+         playerHealth = Math.max(0, Math.min(playerHealth + healthChange, 3)); // 체력을 0과 3 사이로 제한
+        playerHealth += healthChange;
+        if (healthChange < 0) showInjuryEffect(); // 부상 효과
+        resultText += "\n" + healthResult; // 체력 변화 결과 추가
+    } else if (Math.random() < itemChance && addItem) {
+        inventory[addItem] = (inventory[addItem] || 0) + 1; // 아이템 추가
+        resultText += `\n[획득: ${addItem}]`; // 아이템 획득 메시지 추가
+    } else if (failResult) {
+        resultText += "\n" + failResult; // 실패 시 결과 추가
+    }
+
+    updateInventoryUI(); // 아이템 UI 업데이트
+
+    // 다음 단계로 이동 로직 유지
+    isTyping = true;
+    typingInterval = setInterval(() => {
+        if (charIndex < resultText.length) {
+            storyText.textContent += resultText[charIndex];
+            charIndex++;
+        } else {
             clearInterval(typingInterval);
-            storyText.textContent = finalResult;
             isTyping = false;
-            displayNextButton();
-        }
-    };
 
-    // '다음으로' 버튼 표시
-    function displayNextButton() {
-        choicesDiv.innerHTML = ''; // 기존 버튼 제거
-        const nextButton = document.createElement("button");
-        nextButton.classList.add("choice-button");
-        nextButton.textContent = "다음으로";
-
-        nextButton.onclick = () => {
             if (choice.nextIndex !== null && choice.nextIndex !== undefined) {
-                currentStage = choice.nextIndex;
-                checkGameState();
+                const nextButton = document.createElement("button");
+                nextButton.textContent = "다음으로";
+                nextButton.classList.add("choice-button");
+                nextButton.onclick = () => {
+                    currentStage = choice.nextIndex;
+                    displayStory();
+                };
+                choicesDiv.appendChild(nextButton);
             } else {
                 document.getElementById("restart-button").style.display = 'inline-block';
             }
-        };
-
-        choicesDiv.appendChild(nextButton);
-    }
+        }
+    }, typingSpeed);
 }
 
         // 아이템 표시
         function getInventoryText() {
-            return Object.entries(inventory).map(([item, count]) => `${item} x${count}`).join(', ') || '없음';
-        }
+    return Object.entries(inventory).map(([item, count]) => `${item} x${count}`).join(', ') || '없음';
+}
 
         // 게임 상태 확인
         function checkGameState() {
@@ -384,7 +672,7 @@ function makeChoice(choice) {
 
         // 게임 재시작
         function resetGame() {
-            playerHealth = 5;
+            playerHealth = 3;
             currentStage = 0;
             inventory = {};
             document.getElementById("restart-button").style.display = 'none';
